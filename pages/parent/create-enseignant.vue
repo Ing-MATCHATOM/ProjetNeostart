@@ -30,7 +30,7 @@
               <input
                 type="text"
                 id="nom"
-                v-model="form.nom"
+                v-model="form.nom_famille"
                 placeholder="Entrez le nom"
                 class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
                 required
@@ -48,7 +48,7 @@
               <input
                 type="text"
                 id="prenoms"
-                v-model="form.prenoms"
+                v-model="form.prenom"
                 placeholder="Entrez les prénoms"
                 class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
                 required
@@ -66,7 +66,7 @@
               <input
                 type="email"
                 id="email"
-                v-model="form.email"
+                v-model="form.courriel"
                 placeholder="exemple@mail.com"
                 class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
                 required
@@ -74,23 +74,23 @@
             </div>
           </div>
 
-          <!-- Tarif -->
+          <!-- Mode de paiement -->
           <div class="mb-5">
-            <label for="tarif" class="block text-gray-700 font-medium mb-2">Mode de tarif</label>
+            <label for="tarif" class="block text-gray-700 font-medium mb-2">Mode de paiement</label>
             <div class="relative">
               <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <i class="fas fa-money-bill-wave text-gray-400"></i>
               </div>
               <select
                 id="tarif"
-                v-model="form.tarif"
+                v-model="form.mode_paiement"
                 class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none transition"
                 required
               >
-                <option disabled value="">-- Choisir le mode de tarif --</option>
-                <option>Par séance</option>
-                <option>Par semaine</option>
-                <option>Par mois</option>
+                <option disabled value="">-- Choisir le mode de paiement --</option>
+                <option value="Par seance">Par séance</option>
+                <option value="Par semaine">Par semaine</option>
+                <option value="Par mois">Par mois</option>
               </select>
               <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
                 <i class="fas fa-chevron-down text-gray-400"></i>
@@ -115,7 +115,25 @@
               />
             </div>
           </div>
-
+          
+          <div class="mb-6">
+            <label for="nbre" class="block text-gray-700 font-medium mb-2">Nombre d'enfant</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fas fa-child text-gray-400"></i> <!-- Icône plus appropriée -->
+              </div>
+              <input
+                type="number"
+                id="nombre_enfant"
+                v-model.number="form.nbre_enfant"
+                min="0"
+                placeholder="Nombre d'enfant"
+                class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                required
+                @input="validateNumber"
+              />
+            </div>
+          </div>
           <!-- Matière -->
           <div class="mb-5">
             <label for="matiere" class="block text-gray-700 font-medium mb-2">Matière</label>
@@ -169,7 +187,7 @@
               :disabled="loading"
             >
               <i class="fas fa-check-circle mr-2"></i>
-              {{ loading ? 'Validation...' : 'Valider' }}
+              {{ loading ? 'Validation en cours...' : 'Valider' }}
             </button>
           </div>
         </form>
@@ -186,14 +204,18 @@
 <script setup>
 import { ref } from 'vue'
 
+
+  const base_url="http://127.0.0.1:8000/api"
+     
 const form = ref({
-  nom: '',
-  prenoms: '',
-  email: '',
-  tarif: '',
+  nom_famille: '',
+  prenom: '',
+  courriel: '',
+  mode_paiement:"",
+  nbre_enfant:"",
   classe: '',
   matiere: '',
-  salaire: ''
+  salaire: '',
 })
 
 const loading = ref(false)
@@ -208,19 +230,18 @@ const handleSubmit = async () => {
   
   // Simulation d'un appel API
   try {
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    console.log('Enseignant créé:', form.value)
-    // Réinitialiser le formulaire après soumission
-    form.value = { 
-      nom: '', 
-      prenoms: '', 
-      email: '', 
-      tarif: '', 
-      classe: '', 
-      matiere: '', 
-      salaire: '' 
+    const request= await fetch(`${base_url}/enseignant/store`,{
+    method: "POST",
+    headers : {
+      'Content-Type': "application/json",
+    },
+    body: JSON.stringify(form.value)
     }
-    alert('Enseignant créé avec succès!')
+   
+  )
+
+  alert('Enrégistrement effectué avec succes');
+ 
   } catch (error) {
     console.error('Erreur:', error)
     alert('Une erreur est survenue lors de la création.')
