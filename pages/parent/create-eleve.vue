@@ -21,7 +21,7 @@
               <input
                 type="text"
                 id="nom"
-                v-model="form.nom"
+                v-model="form.nom_famille"
                 placeholder="Entrez le nom"
                 class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
                 required
@@ -56,18 +56,14 @@
               </div>
               <select
                 id="classe"
-                v-model="form.classe"
+                v-model="form.niveau_id"
                 class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none transition"
                 required
               >
                 <option disabled value="">-- Sélectionner une classe --</option>
-                <option>6ème</option>
-                <option>5ème</option>
-                <option>4ème</option>
-                <option>3ème</option>
-                <option>Seconde</option>
-                <option>Première</option>
-                <option>Terminale</option>
+                
+                <option :value="niveau.id" v-for="niveau in niveaux" :key="niveau.id">{{ niveau.nom }}</option>
+            
               </select>
               <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
                 <i class="fas fa-chevron-down text-gray-400"></i>
@@ -85,7 +81,7 @@
               <input
                 type="email"
                 id="email"
-                v-model="form.email"
+                v-model="form.courriel"
                 placeholder="exemple@mail.com"
                 class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
                 required
@@ -126,27 +122,45 @@
 
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 
-const router = useRouter()
+  const base_url = "http://127.0.0.1:8000/api"
+  const niveaux=ref([]);
+
 
 const form = ref({
-  nom: '',
+  nom_famille: '',
   prenom: '',
-  classe: '',
-  email: ''
+  courriel:'',
+  niveau_id: ''
 })
 
+
+const fetchNiveaux=async ()=>{
+  const req=await fetch(`${base_url}/niveau/index`)
+    niveaux.value=await req.json()
+
+}
+
 const loading = ref(false)
+const goBack = () => {
+  // Retour à la page précédente
+  window.history.length > 1 ? window.history.back() : navigateTo('/parent')
+}
 
 const handleSubmit = async () => {
   loading.value = true
   
   try {
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    console.log('Élève créé:', form.value)
-    form.value = { nom: '', prenom: '', classe: '', email: '' }
-    alert('Élève créé avec succès!')
+    const request = await fetch(`${base_url}/eleve/store`,{
+    method: "POST",
+    headers : {
+      'Content-Type':"application/json",
+    },
+    body:JSON.stringify(form.value)
+    })
+
+  alert('Enregistrement effectué');
+  navigateTo('/parent')
   } catch (error) {
     console.error('Erreur:', error)
     alert('Une erreur est survenue lors de la création.')
@@ -155,7 +169,8 @@ const handleSubmit = async () => {
   }
 }
 
-const goBack = () => {
-  router.back()
-}
+onMounted(()=>{
+  fetchNiveaux()
+})
+
 </script>

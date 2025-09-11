@@ -102,13 +102,16 @@ const handleLogin = async () => {
 
   try {
     console.log('Tentative de connexion...')
+
+    
+
     
     const response = await $fetch('http://localhost:8000/api/login', {
       method: 'POST',
       body: form.value,
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
       }
     })
     
@@ -118,11 +121,13 @@ const handleLogin = async () => {
     // Vérifiez la structure de la réponse
     if (response && response.user) {
       localStorage.setItem('user', JSON.stringify(response.user))
+      localStorage.setItem('token', JSON.stringify(response.token))
       console.log('Utilisateur stocké:', response.user)
       navigateTo('/dashboard')
     } else if (response && response.data && response.data.user) {
       // Si la réponse est encapsulée dans .data
       localStorage.setItem('user', JSON.stringify(response.data.user))
+       localStorage.setItem('user', JSON.stringify(response.data.token))
       console.log('Utilisateur stocké (dans data):', response.data.user)
       navigateTo('/dashboard')
     } else {

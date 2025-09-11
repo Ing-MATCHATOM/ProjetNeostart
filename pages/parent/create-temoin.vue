@@ -66,7 +66,7 @@
               <input
                 type="email"
                 id="email"
-                v-model="form.email"
+                v-model="form.courriel"
                 placeholder="exemple@mail.com"
                 class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
                 required
@@ -107,11 +107,13 @@
 
 <script setup>
 import { ref } from 'vue'
+  const base_url = "http://127.0.0.1:8000/api"
 
 const form = ref({
   nom: '',
   prenom: '',
-  email: ''
+  courriel: '',
+  id:"",
 })
 
 const loading = ref(false)
@@ -124,18 +126,36 @@ const goBack = () => {
 const handleSubmit = async () => {
   loading.value = true
   
-  // Simulation d'un appel API
   try {
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    console.log('Compte témoin créé:', form.value)
-    // Réinitialiser le formulaire après soumission
-    form.value = { nom: '', prenom: '', email: '' }
-    alert('Compte témoin créé avec succès!')
+const token = JSON.parse(localStorage.getItem('token'));    
+    if (!token) {
+      alert('Veuillez vous connecter d\'abord');
+      navigateTo('/login');
+      return;
+    }
+
+    const response = await fetch(`${base_url}/temoin/store`, {
+      method: "POST",
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(form.value)
+    });
+
+    
+    if (!response.ok) {
+      throw new Error('Erreur serveur');
+    }
+
+    alert('Enregistrement effectué');
+    navigateTo('/parent');
+    
   } catch (error) {
-    console.error('Erreur:', error)
-    alert('Une erreur est survenue lors de la création.')
+    console.error('Erreur:', error);
+    alert('Une erreur est survenue lors de la création.');
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 </script>

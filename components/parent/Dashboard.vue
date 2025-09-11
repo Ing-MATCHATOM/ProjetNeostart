@@ -140,6 +140,7 @@ const handleLogout = async () => {
   } finally {
     // Nettoyer le localStorage
     localStorage.removeItem('user')
+        localStorage.removeItem('token')
     navigateTo('/login')
   }
 }
