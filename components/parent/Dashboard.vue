@@ -1,111 +1,66 @@
 <template>
-  <div class="min-h-screen bg-gray-50 p-6">
-    <!-- En-tête avec infos utilisateur -->
-    <div class="mb-8 flex justify-between items-center">
-      <div>
-        <h1 class="text-3xl font-bold text-gray-800">Dashboard Parent</h1>
-        <p class="text-gray-600" v-if="user.prenom_nom">
-          Bienvenue, {{ user.prenom_nom }} {{ user.nom_famille }}
-        </p>
-        <p class="text-sm text-gray-500">{{ user.courriel }}</p>
-      </div>
-      <button
-        @click="handleLogout"
-        class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition"
-      >
-        Déconnexion
-      </button>
+  <div class="min-h-screen flex">
+    <!-- Sidebar -->
+    <div class="w-64 bg-blue-800 text-white p-6 flex flex-col">
+      <h2 class="text-2xl font-bold mb-8">Tableau de Bord</h2>
+      <nav class="space-y-4">
+        <NuxtLink to="/parent/create-enseignant" class="nav-link">Créer Enseignant</NuxtLink>
+        <NuxtLink to="/parent/create-eleve" class="nav-link">Créer Élève</NuxtLink>
+        <NuxtLink to="/parent/create-temoin" class="nav-link">Créer Témoin</NuxtLink>
+        <a href="#" class="nav-link">Rapports & Statistiques</a>
+        <a href="#" class="nav-link">Emploi du Temps</a>
+        <a href="#" class="nav-link">Validation des Séances</a>
+      </nav>
     </div>
 
-    <!-- Menu de navigation -->
-    <div class="bg-white rounded-xl shadow-md p-6 mb-8">
-      <h2 class="text-xl font-semibold text-gray-800 mb-4">Menu de navigation</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <NuxtLink to="/parent/create-enseignant" class="menu-item">
-          <div class="menu-icon bg-purple-100 text-purple-600">
-            <i class="fas fa-user-check"></i>
-          </div>
-          <span>Créer Enseignant</span>
-        </NuxtLink>
-
-        <NuxtLink to="/parent/create-eleve" class="menu-item">
-          <div class="menu-icon bg-purple-100 text-purple-600">
-            <i class="fas fa-user-check"></i>
-          </div>
-          <span>Créer Eleve</span>
-        </NuxtLink>
-
-        <NuxtLink to="/parent/create-temoin" class="menu-item">
-          <div class="menu-icon bg-purple-100 text-purple-600">
-            <i class="fas fa-user-check"></i>
-          </div>
-          <span>Créer Témoin</span>
-        </NuxtLink>
-
-        <a href="#" class="menu-item">
-          <div class="menu-icon bg-blue-100 text-blue-600">
-            <i class="fas fa-chart-line"></i>
-          </div>
-          <span>Rapports & Statistiques</span>
-        </a>
-
-        <a href="#" class="menu-item">
-          <div class="menu-icon bg-orange-100 text-orange-600">
-            <i class="fas fa-calendar-alt"></i>
-          </div>
-          <span>Emploi du Temps</span>
-        </a>
-
-        <a href="#" class="menu-item">
-          <div class="menu-icon bg-red-100 text-red-600">
-            <i class="fas fa-clipboard-check"></i>
-          </div>
-          <span>Validation des Séances</span>
-        </a>
+    <!-- Contenu principal -->
+    <div class="flex-1 p-8 bg-gray-50">
+      <!-- Header -->
+      <div class="flex justify-between items-center mb-8">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-800">Bienvenue</h1>
+          <p class="text-gray-600">{{ user.prenom_nom }} {{ user.nom_famille }}</p>
+          <p class="text-sm text-gray-500">{{ user.courriel }}</p>
+        </div>
+        <button
+          @click="handleLogout"
+          class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition"
+        >
+          Déconnexion
+        </button>
       </div>
-    </div>
 
-    <!-- Statistiques rapides -->
-    <div class="bg-white rounded-xl shadow-md p-6">
-      <h2 class="text-xl font-semibold text-gray-800 mb-4">Aperçu</h2>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="stat-card">
-          <div class="stat-icon bg-indigo-100 text-indigo-600">
-            <i class="fas fa-chalkboard-teacher"></i>
-          </div>
-          <div class="stat-content">
-            <p class="stat-value">12</p>
+      <!-- Statistiques -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="stat-card bg-green-100 text-green-700">
+          <i class="fas fa-chalkboard-teacher stat-icon bg-blue-100 text-blue-600"></i>
+          <div>
+            <p class="stat-value">{{ stats.enseignants }}</p>
             <p class="stat-label">Enseignants</p>
           </div>
         </div>
-        
-        <div class="stat-card">
-          <div class="stat-icon bg-green-100 text-green-600">
-            <i class="fas fa-user-graduate"></i>
-          </div>
-          <div class="stat-content">
-            <p class="stat-value">24</p>
+
+        <div class="stat-card bg-green-100 text-green-700">
+          <i class="fas fa-user-graduate stat-icon bg-blue-100 text-blue-600"></i>
+          <div>
+            <p class="stat-value">{{ stats.eleves }}</p>
             <p class="stat-label">Élèves</p>
           </div>
         </div>
-        
-        <div class="stat-card">
-          <div class="stat-icon bg-purple-100 text-purple-600">
-            <i class="fas fa-user-check"></i>
-          </div>
-          <div class="stat-content">
-            <p class="stat-value">5</p>
+
+        <div class="stat-card bg-green-100 text-green-700">
+          <i class="fas fa-user-check stat-icon bg-blue-100 text-blue-600"></i>
+          <div>
+            <p class="stat-value">{{ stats.temoins }}</p>
             <p class="stat-label">Témoins</p>
           </div>
         </div>
-        
-        <div class="stat-card">
-          <div class="stat-icon bg-blue-100 text-blue-600">
-            <i class="fas fa-clock"></i>
-          </div>
-          <div class="stat-content">
-            <p class="stat-value">8</p>
-            <p class="stat-label">Séances cette semaine</p>
+
+        <div class="stat-card bg-green-100 text-green-700">
+          <i class="fas fa-clock stat-icon bg-blue-100 text-blue-600"></i>
+          <div>
+            <p class="stat-value">{{ stats.seances }}</p>
+            <p class="stat-label">Séances</p>
           </div>
         </div>
       </div>
@@ -117,92 +72,81 @@
 import { ref, onMounted } from 'vue'
 
 const user = ref({})
+const stats = ref({
+  enseignants: 0,
+  eleves: 0,
+  temoins: 0,
+  seances: 0,
+})
 
-onMounted(() => {
-  // Récupérer l'utilisateur depuis localStorage
+onMounted(async () => {
+  // Récupérer utilisateur
   const userData = localStorage.getItem('user')
   if (userData) {
     user.value = JSON.parse(userData)
-    console.log('Utilisateur connecté:', user.value)
   } else {
-    // Rediriger vers login si pas connecté
     navigateTo('/login')
+    return
+  }
+
+  // Récupérer token
+  const token = JSON.parse(localStorage.getItem('token'))
+  try {
+    const response = await fetch('http://127.0.0.1:8000/api/parent/stats', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    })
+    if (!response.ok) throw new Error('Erreur API')
+    stats.value = await response.json()
+  } catch (error) {
+    console.error('Erreur récupération stats:', error)
   }
 })
 
-const handleLogout = async () => {
-  try {
-    await $fetch('/api/logout', {
-      method: 'POST'
-    })
-  } catch (err) {
-    console.error('Erreur déconnexion:', err)
-  } finally {
-    // Nettoyer le localStorage
-    localStorage.removeItem('user')
-        localStorage.removeItem('token')
-    navigateTo('/login')
-  }
+const handleLogout = () => {
+  localStorage.removeItem('user')
+  localStorage.removeItem('token')
+  navigateTo('/login')
 }
 </script>
 
 <style scoped>
-.menu-item {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  border-radius: 10px;
-  background-color: #f9fafb;
-  transition: all 0.3s ease;
-  color: #374151;
-  font-weight: 500;
-}
-
-.menu-item:hover {
-  background-color: #e5e7eb;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.menu-icon {
-  width: 40px;
-  height: 40px;
+.nav-link {
+  display: block;
+  padding: 10px 14px;
   border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 12px;
-  font-size: 16px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+.nav-link:hover {
+  background-color: #2563eb; /* hover bleu plus clair */
 }
 
 .stat-card {
   display: flex;
   align-items: center;
   padding: 16px;
-  border-radius: 10px;
-  background-color: #f9fafb;
+  border-radius: 12px;
+  gap: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
 }
 
 .stat-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 12px;
-  font-size: 16px;
-}
-
-.stat-value {
   font-size: 20px;
-  font-weight: bold;
-  color: #111827;
-  margin-bottom: 2px;
 }
-
+.stat-value {
+  font-size: 22px;
+  font-weight: bold;
+}
 .stat-label {
   font-size: 14px;
-  color: #6b7280;
 }
 </style>

@@ -1,259 +1,137 @@
 <template>
-  <div class="min-h-screen flex justify-center items-center bg-gradient-to-br from-indigo-50 to-purple-100 p-4">
-    <div class="w-full max-w-lg bg-white rounded-xl shadow-lg overflow-hidden">
-      <!-- En-tête avec icône et bouton retour -->
-      <div class="bg-indigo-600 p-4 text-center relative">
-        <!-- Bouton retour -->
-        <button 
-          @click="goBack" 
-          class="absolute left-4 top-4 text-white hover:text-gray-200 transition"
-          title="Retour"
-        >
-          <i class="fas fa-arrow-left text-xl"></i>
-        </button>
-        
-        <div class="inline-flex items-center justify-center w-16 h-16 bg-white rounded-full mb-2">
-          <i class="fas fa-chalkboard-teacher text-indigo-600 text-2xl"></i>
+  <div class="min-h-screen flex bg-gradient-to-br from-indigo-50 to-purple-100">
+    <!-- Nav verticale -->
+    <aside class="w-64 bg-white shadow-md p-6 flex flex-col">
+      <h2 class="text-2xl font-bold mb-6 text-indigo-700">Enseignant Dashboard</h2>
+      <nav class="flex flex-col gap-3">
+        <NuxtLink to="/parent" class="px-3 py-2 rounded hover:bg-indigo-100 transition bg-indigo-100">Accueil</NuxtLink>
+        <NuxtLink to="/parent/ajout-enseignant" class="px-3 py-2 rounded hover:bg-indigo-100 transition bg-indigo-100">Créer Enseignant</NuxtLink>
+      </nav>
+    </aside>
+
+    <!-- Contenu principal -->
+    <main class="flex-1 p-6">
+      <div v-if="showList" class="max-w-4xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden p-6">
+        <h2 class="text-xl font-bold mb-4">Liste des enseignants</h2>
+        <table class="w-full table-auto border-collapse border border-gray-200">
+          <thead>
+            <tr class="bg-gray-100">
+              <th class="border px-4 py-2 text-left">Nom</th>
+              <th class="border px-4 py-2 text-left">Prénom</th>
+              <th class="border px-4 py-2 text-left">Email</th>
+              <th class="border px-4 py-2">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="enseignant in enseignants" :key="enseignant.id" class="hover:bg-gray-50">
+              <td class="border px-4 py-2">{{ enseignant.nom_famille }}</td>
+              <td class="border px-4 py-2">{{ enseignant.prenom }}</td>
+              <td class="border px-4 py-2">{{ enseignant.courriel }}</td>
+              <td class="border px-4 py-2 text-center">
+                <button @click="associer(enseignant.id)" 
+                        class="bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700 transition">
+                  Associer
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div v-else class="max-w-md mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
+        <!-- Formulaire Ajouter Enseignant -->
+        <div class="bg-indigo-600 p-4 text-center">
+          <h2 class="text-2xl font-bold text-white">Créer un enseignant</h2>
         </div>
-        <h2 class="text-2xl font-bold text-white">Créer un enseignant</h2>
+
+        <div class="p-6">
+          <form @submit.prevent="handleSubmit" class="space-y-4">
+            <div>
+              <label class="block text-gray-700 mb-1">Nom</label>
+              <input v-model="form.nom_famille" type="text" placeholder="Nom" required
+                     class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none"/>
+            </div>
+
+            <div>
+              <label class="block text-gray-700 mb-1">Prénom</label>
+              <input v-model="form.prenom" type="text" placeholder="Prénom" required
+                     class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none"/>
+            </div>
+
+            <div>
+              <label class="block text-gray-700 mb-1">Email</label>
+              <input v-model="form.courriel" type="email" placeholder="Email" required
+                     class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none"/>
+            </div>
+
+            <div class="flex gap-3">
+              <button type="button" @click="showList = true"
+                      class="flex-1 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600 transition">Retour</button>
+              <button type="submit" :disabled="loading"
+                      class="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition">
+                {{ loading ? 'Création...' : 'Valider' }}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-      
-      <div class="p-8">
-        <form @submit.prevent="handleSubmit">
-          <!-- Nom -->
-          <div class="mb-5">
-            <label for="nom" class="block text-gray-700 font-medium mb-2">Nom</label>
-            <div class="relative">
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <i class="fas fa-user text-gray-400"></i>
-              </div>
-              <input
-                type="text"
-                id="nom"
-                v-model="form.nom_famille"
-                placeholder="Entrez le nom"
-                class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-                required
-              />
-            </div>
-          </div>
-
-          <!-- Prénoms -->
-          <div class="mb-5">
-            <label for="prenoms" class="block text-gray-700 font-medium mb-2">Prénoms</label>
-            <div class="relative">
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <i class="fas fa-signature text-gray-400"></i>
-              </div>
-              <input
-                type="text"
-                id="prenoms"
-                v-model="form.prenom"
-                placeholder="Entrez les prénoms"
-                class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-                required
-              />
-            </div>
-          </div>
-
-          <!-- Email -->
-          <div class="mb-5">
-            <label for="email" class="block text-gray-700 font-medium mb-2">Email</label>
-            <div class="relative">
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <i class="fas fa-envelope text-gray-400"></i>
-              </div>
-              <input
-                type="email"
-                id="email"
-                v-model="form.courriel"
-                placeholder="exemple@mail.com"
-                class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-                required
-              />
-            </div>
-          </div>
-
-          <!-- Mode de paiement -->
-          <div class="mb-5">
-            <label for="tarif" class="block text-gray-700 font-medium mb-2">Mode de paiement</label>
-            <div class="relative">
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <i class="fas fa-money-bill-wave text-gray-400"></i>
-              </div>
-              <select
-                id="tarif"
-                v-model="form.mode_paiement"
-                class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none transition"
-                required
-              >
-                <option disabled value="">-- Choisir le mode de paiement --</option>
-                <option value="Par seance">Par séance</option>
-                <option value="Par semaine">Par semaine</option>
-                <option value="Par mois">Par mois</option>
-              </select>
-              <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                <i class="fas fa-chevron-down text-gray-400"></i>
-              </div>
-            </div>
-          </div>
-
-          <!-- Classe d'intervention -->
-          <div class="mb-5">
-            <label for="classe" class="block text-gray-700 font-medium mb-2">Classe d'intervention</label>
-            <div class="relative">
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <i class="fas fa-graduation-cap text-gray-400"></i>
-              </div>
-              <input
-                type="text"
-                id="classe"
-                v-model="form.classe"
-                placeholder="Ex: 4ème, 3ème..."
-                class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-                required
-              />
-            </div>
-          </div>
-          
-          <div class="mb-6">
-            <label for="nbre" class="block text-gray-700 font-medium mb-2">Nombre d'enfant</label>
-            <div class="relative">
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <i class="fas fa-child text-gray-400"></i> <!-- Icône plus appropriée -->
-              </div>
-              <input
-                type="number"
-                id="nombre_enfant"
-                v-model.number="form.nbre_enfant"
-                min="0"
-                placeholder="Nombre d'enfant"
-                class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-                required
-                @input="validateNumber"
-              />
-            </div>
-          </div>
-          <!-- Matière -->
-          <div class="mb-5">
-            <label for="matiere" class="block text-gray-700 font-medium mb-2">Matière</label>
-            <div class="relative">
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <i class="fas fa-book text-gray-400"></i>
-              </div>
-              <input
-                type="text"
-                id="matiere"
-                v-model="form.matiere"
-                placeholder="Ex: Mathématiques, Physique..."
-                class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-                required
-              />
-            </div>
-          </div>
-
-          <!-- Salaire -->
-          <div class="mb-6">
-            <label for="salaire" class="block text-gray-700 font-medium mb-2">Salaire (FCFA)</label>
-            <div class="relative">
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <i class="fas fa-money-bill text-gray-400"></i>
-              </div>
-              <input
-                type="number"
-                id="salaire"
-                v-model="form.salaire"
-                placeholder="Montant du salaire"
-                class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-                required
-              />
-            </div>
-          </div>
-
-          <!-- Boutons -->
-          <div class="flex space-x-4">
-            <button
-              type="button"
-              @click="goBack"
-              class="flex-1 bg-gray-500 text-white py-3 rounded-lg font-semibold hover:bg-gray-600 transition-colors flex items-center justify-center"
-            >
-              <i class="fas fa-arrow-left mr-2"></i>
-              Retour
-            </button>
-            
-            <button
-              type="submit"
-              class="flex-1 bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors flex items-center justify-center"
-              :disabled="loading"
-            >
-              <i class="fas fa-check-circle mr-2"></i>
-              {{ loading ? 'Validation en cours...' : 'Valider' }}
-            </button>
-          </div>
-        </form>
-      </div>
-      
-      <!-- Pied de page -->
-      <div class="bg-gray-100 p-4 text-center text-sm text-gray-600">
-        <p><i class="fas fa-shield-alt mr-1"></i> Informations sécurisées et confidentielles</p>
-      </div>
-    </div>
+    </main>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 
+const base_url = "http://127.0.0.1:8000/api"
+const showList = ref(true)
+const enseignants = ref([])
 
-  const base_url="http://127.0.0.1:8000/api"
-     
 const form = ref({
   nom_famille: '',
   prenom: '',
-  courriel: '',
-  mode_paiement:"",
-  nbre_enfant:"",
-  classe: '',
-  matiere: '',
-  salaire: '',
+  courriel: ''
 })
-
 const loading = ref(false)
 
-const goBack = () => {
-  // Retour à la page précédente
-  window.history.length > 1 ? window.history.back() : navigateTo('/parent')
+const fetchEnseignants = async () => {
+  try {
+    const res = await fetch(`${base_url}/enseignant/index`)
+    enseignants.value = await res.json()
+  } catch (e) {
+    console.error(e)
+  }
 }
 
 const handleSubmit = async () => {
   loading.value = true
-  
-  // Simulation d'un appel API
   try {
-    const request= await fetch(`${base_url}/enseignant/store`,{
-    method: "POST",
-    headers : {
-      'Content-Type': "application/json",
-    },
-    body: JSON.stringify(form.value)
-    }
-   
-  )
+    const token = JSON.parse(localStorage.getItem('token'))
+    if (!token) { alert('Veuillez vous connecter'); return }
 
-  alert('Enrégistrement effectué avec succes');
- 
-  } catch (error) {
-    console.error('Erreur:', error)
-    alert('Une erreur est survenue lors de la création.')
-  } finally {
-    loading.value = false
-  }
+    const res = await fetch(`${base_url}/enseignant/store`, {
+      method: "POST",
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(form.value)
+    })
+    if (!res.ok) throw new Error('Erreur serveur')
+    alert('Enregistrement effectué')
+    form.value = { nom_famille:'', prenom:'', courriel:'' }
+    showList.value = true
+    fetchEnseignants()
+  } catch (err) { console.error(err); alert('Erreur création') }
+  finally { loading.value = false }
 }
+
+const associer = (id) => {
+  alert(`Associer enseignant ID: ${id}`)
+}
+
+onMounted(fetchEnseignants)
 </script>
 
-<style>
-/* Styles pour le select */
-select {
-  background-image: none;
-}
+<style scoped>
+table th, table td { border: 1px solid #ddd; }
 </style>
