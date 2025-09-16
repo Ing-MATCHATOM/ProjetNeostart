@@ -32,7 +32,7 @@
               <td class="border px-4 py-2">{{ enseignant.enseignant.courriel }}</td>
               <td class="border px-4 py-2 text-center">
                 <button @click="associer(enseignant.enseignant.id)" 
-                <button @click="associer(enseignant.enseignant.id)" 
+             
                         class="bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700 transition">
                   Associer
                 </button>
