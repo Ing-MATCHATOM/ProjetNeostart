@@ -145,12 +145,10 @@ const handleLogin = async () => {
     if (response && response.user) {
       localStorage.setItem('user', JSON.stringify(response.user))
       localStorage.setItem('token', JSON.stringify(response.token))
-      
       localStorage.setItem('role', response.role)
       console.log('Utilisateur stocké:', response.user)
-       console.log('Token stocké:', response.token)
       if (response.role === 'parent') {
-        navigateTo('/dashboard')
+        navigateTo('dashboard')
       } else if (response.role === 'eleve') {
         navigateTo('/dashboard-eleve')
       } else if (response.role === 'enseignant') {
@@ -162,11 +160,9 @@ const handleLogin = async () => {
     } else if (response && response.data && response.data.user) {
       // Si la réponse est encapsulée dans .data
       localStorage.setItem('user', JSON.stringify(response.data.user))
-       localStorage.setItem('token', JSON.stringify(response.data.token))
-
+      localStorage.setItem('token', JSON.stringify(response.data.token))
       console.log('Utilisateur stocké (dans data):', response.data.user)
-            console.log('token stocké (dans data):', response.data.token)
-
+          console.log('token stocké (dans data):', response.data.token)
       if (response.role === 'parent') {
         navigateTo('/dashboard-parent')
       } else if (response.role === 'eleve') {

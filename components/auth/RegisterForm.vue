@@ -84,7 +84,9 @@ const handleRegister = async () => {
         'Accept': 'application/json'
       }
     })
-    
+      localStorage.setItem('user', JSON.stringify(data.user))
+      localStorage.setItem('token', JSON.stringify(data.token))
+      localStorage.setItem('role', data.role)
     success.value = 'Inscription réussie ! Redirection...'
     console.log('Succès:', data)
     

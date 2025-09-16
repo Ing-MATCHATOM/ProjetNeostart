@@ -24,11 +24,11 @@
           </thead>
           <tbody>
             <tr v-for="enseignant in enseignants" :key="enseignant.id" class="hover:bg-gray-50">
-              <td class="border px-4 py-2">{{ enseignant.nom_famille }}</td>
-              <td class="border px-4 py-2">{{ enseignant.prenom }}</td>
-              <td class="border px-4 py-2">{{ enseignant.courriel }}</td>
+              <td class="border px-4 py-2">{{ enseignant.enseignant.nom_famille }}</td>
+              <td class="border px-4 py-2">{{ enseignant.enseignant.prenom }}</td>
+              <td class="border px-4 py-2">{{ enseignant.enseignant.courriel }}</td>
               <td class="border px-4 py-2 text-center">
-                <button @click="associer(enseignant.id)" 
+                <button @click="associer(enseignant.enseignant.id)" 
                         class="bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700 transition">
                   Associer
                 </button>
@@ -94,8 +94,14 @@ const form = ref({
 const loading = ref(false)
 
 const fetchEnseignants = async () => {
+  const token = JSON.parse(localStorage.getItem('token'))
+
   try {
-    const res = await fetch(`${base_url}/enseignant/index`)
+    const res = await fetch(`${base_url}/enseignant/index`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
     enseignants.value = await res.json()
   } catch (e) {
     console.error(e)
@@ -106,7 +112,10 @@ const handleSubmit = async () => {
   loading.value = true
   try {
     const token = JSON.parse(localStorage.getItem('token'))
-    if (!token) { alert('Veuillez vous connecter'); return }
+    if (!token) {
+      alert('Veuillez vous connecter')
+      return
+    }
 
     const res = await fetch(`${base_url}/enseignant/store`, {
       method: "POST",
@@ -116,13 +125,20 @@ const handleSubmit = async () => {
       },
       body: JSON.stringify(form.value)
     })
+
     if (!res.ok) throw new Error('Erreur serveur')
+
     alert('Enregistrement effectué')
-    form.value = { nom_famille:'', prenom:'', courriel:'' }
+    form.value = { nom_famille: '', prenom: '', courriel: '' }
     showList.value = true
     fetchEnseignants()
-  } catch (err) { console.error(err); alert('Erreur création') }
-  finally { loading.value = false }
+
+  } catch (err) {
+    console.error(err)
+    alert('Erreur création')
+  } finally {
+    loading.value = false
+  }
 }
 
 const associer = (id) => {

@@ -24,11 +24,11 @@
           </thead>
           <tbody>
             <tr v-for="eleve in eleves" :key="eleve.id" class="hover:bg-gray-50">
-              <td class="border px-4 py-2">{{ eleve.nom_famille }}</td>
-              <td class="border px-4 py-2">{{ eleve.prenom }}</td>
-              <td class="border px-4 py-2">{{ eleve.classe }}</td>
+              <td class="border px-4 py-2">{{ eleve.eleve.nom_famille }}</td>
+              <td class="border px-4 py-2">{{ eleve.eleve.prenom }}</td>
+              <td class="border px-4 py-2">{{ eleve.eleve.classe }}</td>
               <td class="border px-4 py-2 text-center">
-                <button @click="associer(eleve.id)" class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">
+                <button @click="associer(eleve.eleve.id)" class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">
                   Associer
                 </button>
               </td>
@@ -63,20 +63,70 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+
 const base_url = "http://127.0.0.1:8000/api"
 const showList = ref(true)
 const eleves = ref([])
-const form = ref({ nom_famille:'', prenom:'', classe:'' })
+const form = ref({ nom_famille: '', prenom: '', classe: '' })
 const loading = ref(false)
 
+// Récupérer la liste des élèves
 const fetchEleves = async () => {
-  const res = await fetch(`${base_url}/eleve/index`)
-  eleves.value = await res.json()
+  try {
+    const token = JSON.parse(localStorage.getItem('token'))
+    const res = await fetch(`${base_url}/eleve/index`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    eleves.value = await res.json()
+  } catch (e) {
+    console.error(e)
+  }
 }
-const handleSubmit = async () => { /* même logique que Enseignant */ }
-const associer = (id) => alert(`Associer élève ID: ${id}`)
+
+// Créer un élève
+const handleSubmit = async () => {
+  loading.value = true
+  try {
+    const token = JSON.parse(localStorage.getItem('token'))
+    if (!token) {
+      alert('Veuillez vous connecter')
+      return
+    }
+
+    const res = await fetch(`${base_url}/eleve/store`, {
+      method: "POST",
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(form.value)
+    })
+
+    if (!res.ok) throw new Error('Erreur serveur')
+
+    alert('Élève créé avec succès')
+    form.value = { nom_famille: '', prenom: '', classe: '' }
+    showList.value = true
+    fetchEleves() // rafraîchir la liste
+
+  } catch (err) {
+    console.error(err)
+    alert('Erreur lors de la création')
+  } finally {
+    loading.value = false
+  }
+}
+
+// Associer un élève
+const associer = (id) => {
+  alert(`Associer élève ID: ${id}`)
+}
+
 onMounted(fetchEleves)
 </script>
+
 
 <style scoped>
 </style>
