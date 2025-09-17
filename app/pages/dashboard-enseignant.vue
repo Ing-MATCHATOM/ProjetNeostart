@@ -4,7 +4,7 @@
     <div class="w-64 bg-indigo-800 text-white p-6 flex flex-col">
       <h2 class="text-2xl font-bold mb-8">Enseignant</h2>
       <nav class="space-y-4">
-        <NuxtLink to="/enseignant/emploi" class="nav-link">Emploi du temps</NuxtLink>
+        <NuxtLink to="/emploi" class="nav-link">Emploi du temps</NuxtLink>
         <NuxtLink to="/enseignant/rapports" class="nav-link">Rapports</NuxtLink>
         <NuxtLink to="/enseignant/validation" class="nav-link">Validation</NuxtLink>
         <NuxtLink to="/enseignant/statistiques" class="nav-link">Statistiques</NuxtLink>

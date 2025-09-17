@@ -27,9 +27,7 @@
               <td class="border px-4 py-2">{{ enseignant.enseignant.nom_famille }}</td>
               <td class="border px-4 py-2">{{ enseignant.enseignant.prenom }}</td>
               <td class="border px-4 py-2">{{ enseignant.enseignant.courriel }}</td>
-              <td class="border px-4 py-2">{{ enseignant.enseignant.nom_famille }}</td>
-              <td class="border px-4 py-2">{{ enseignant.enseignant.prenom }}</td>
-              <td class="border px-4 py-2">{{ enseignant.enseignant.courriel }}</td>
+
               <td class="border px-4 py-2 text-center">
                 <button @click="associer(enseignant.enseignant.id)" 
              
