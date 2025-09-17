@@ -5,7 +5,7 @@
       <h2 class="text-2xl font-bold mb-8">Enseignant</h2>
       <nav class="space-y-4">
         <NuxtLink to="/enseignant/emploi" class="nav-link">Emploi du temps</NuxtLink>
-        <NuxtLink to="/enseignant/rapports" class="nav-link">Rapports</NuxtLink>
+        <NuxtLink to="rapport-enseignant" class="nav-link">Rapports</NuxtLink>
         <NuxtLink to="/enseignant/validation" class="nav-link">Validation</NuxtLink>
         <NuxtLink to="/enseignant/statistiques" class="nav-link">Statistiques</NuxtLink>
       </nav>
@@ -89,6 +89,34 @@ onMounted(() => {
     navigateTo('/login')
   }
 })
+const soumettreRapport = async () => {
+  try {
+    const token = localStorage.getItem('token')
+
+    const response = await fetch('http://localhost:8000/api/rapports', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(rapport.value)
+    })
+
+    if (!response.ok) {
+      const err = await response.json()
+      throw new Error(err.message || 'Erreur lors de l\'envoi.')
+    }
+
+    const data = await response.json()
+    message.value = '✅ Rapport enregistré avec succès'
+    console.log(data)
+
+    rapport.value = { date: '', heure_debut: '', heure_fin: '', contenu: '' }
+  } catch (error) {
+    console.error(error)
+    message.value = `❌ ${error.message}`
+  }
+}
 
 const handleLogout = () => {
   localStorage.removeItem('user')
