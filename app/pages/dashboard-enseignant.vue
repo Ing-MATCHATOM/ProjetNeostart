@@ -89,34 +89,6 @@ onMounted(() => {
     navigateTo('/login')
   }
 })
-const soumettreRapport = async () => {
-  try {
-    const token = localStorage.getItem('token')
-
-    const response = await fetch('http://localhost:8000/api/rapports', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(rapport.value)
-    })
-
-    if (!response.ok) {
-      const err = await response.json()
-      throw new Error(err.message || 'Erreur lors de l\'envoi.')
-    }
-
-    const data = await response.json()
-    message.value = '✅ Rapport enregistré avec succès'
-    console.log(data)
-
-    rapport.value = { date: '', heure_debut: '', heure_fin: '', contenu: '' }
-  } catch (error) {
-    console.error(error)
-    message.value = `❌ ${error.message}`
-  }
-}
 
 const handleLogout = () => {
   localStorage.removeItem('user')
