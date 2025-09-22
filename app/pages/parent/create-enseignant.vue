@@ -40,9 +40,7 @@
                 <ul>
                   <li v-for="asso in ens.associations">{{ asso.temoin ? asso.temoin.nom + ' ' + asso.temoin.prenom : 'Aucun' }}</li>
                 </ul>
-               
-                  
-                 
+                                
               </td>
               <td class="border px-4 py-2 text-center">
                 <button
@@ -96,7 +94,7 @@
     <div v-if="modal.open" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
 
       <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-        <h3 class="mb-4 text-lg font-semibold">Associer à l’enseignant</h3>
+        <h3 class="mb-4 text-lg font-semibold">Associer à l'enseignant</h3>
         <div class="mb-4">
           <label class="mb-1 block text-sm font-medium">Choisir élève *</label>
           <select v-model="modal.eleveId" class="w-full rounded border p-2">
@@ -269,6 +267,4 @@ onMounted(fetchEnseignants)
 <style scoped>
 table th, table td { border: 1px solid #ddd; }
 </style>
-    alert('Enregistrement effectué')
-      form.value = { nom_famille: '', prenom: '', courriel: '' }
-      showList.value = true
+    

@@ -5,62 +5,44 @@
       <h1 class="text-2xl font-bold">Tableau de bord Élève</h1>
       <button
         @click="handleLogout"
-        class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
+        class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition"
       >
         Déconnexion
       </button>
     </div>
 
-    <!-- Statistiques rapides -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-      <div class="bg-white shadow rounded-lg p-4 border-l-4 border-blue-500">
-        <p class="text-gray-500">Séances à venir</p>
-        <p class="text-xl font-semibold">{{ seances.length }}</p>
-      </div>
-      <div class="bg-white shadow rounded-lg p-4 border-l-4 border-green-500">
-        <p class="text-gray-500">Séances validées</p>
-        <p class="text-xl font-semibold">{{ validatedSeances }}</p>
-      </div>
-      <div class="bg-white shadow rounded-lg p-4 border-l-4 border-yellow-500">
-        <p class="text-gray-500">Séances reportées</p>
-        <p class="text-xl font-semibold">{{ reportedSeances }}</p>
+    <!-- Calendrier -->
+    <div class="bg-white shadow rounded-lg p-4">
+      <h2 class="text-xl font-semibold mb-4">Emploi du temps</h2>
+      <div class="h-[650px] overflow-auto">
+        <FullCalendar :options="calendarOptions" />
       </div>
     </div>
 
-    <!-- Liste des séances -->
-    <div class="bg-white shadow rounded-lg p-4">
-      <h2 class="text-xl font-semibold mb-4">Séances à venir</h2>
-      <div v-for="seance in seances" :key="seance.id" class="border rounded-lg p-4 mb-3">
-        <div class="flex justify-between items-center">
-          <div>
-            <h3 class="font-semibold text-lg">{{ seance.matiere }}</h3>
-            <p class="text-gray-600">{{ formatDate(seance.date) }} à {{ seance.heure }}</p>
-          </div>
-          <div>
-            <span :class="[
-              'px-3 py-1 rounded-full text-sm font-medium',
-              seance.statut === 'planifie' ? 'bg-blue-100 text-blue-800' : '',
-              seance.statut === 'valide' ? 'bg-green-100 text-green-800' : '',
-              seance.statut === 'reporte' ? 'bg-yellow-100 text-yellow-800' : ''
-            ]">
-              {{ getStatusText(seance.statut) }}
-            </span>
-          </div>
-        </div>
-        <div class="mt-3 flex space-x-2">
-          <button 
-            v-if="seance.statut === 'planifie'" 
-            class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
-            @click="validateSeance(seance.id)"
+    <!-- Modal -->
+    <div
+      v-if="selectedEvent"
+      class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50"
+    >
+      <div class="bg-white rounded-lg shadow-lg w-96 p-6">
+        <h3 class="text-lg font-bold mb-2">{{ selectedEvent.title }}</h3>
+        <p><strong>Jour :</strong> {{ selectedEvent.extendedProps.jour }}</p>
+        <p><strong>Heure :</strong> {{ selectedEvent.extendedProps.heure }}</p>
+        <p><strong>Statut :</strong> {{ selectedEvent.extendedProps.statut }}</p>
+
+        <div class="flex justify-end space-x-2 mt-4">
+          <button
+            class="px-4 py-2 bg-gray-400 text-white rounded-md"
+            @click="closeModal"
+          >
+            Fermer
+          </button>
+          <button
+            v-if="selectedEvent.extendedProps.statut === 'Planifié'"
+            class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
+            @click="validateSeance(selectedEvent.id)"
           >
             Valider
-          </button>
-          <button 
-            v-if="seance.statut === 'planifie'" 
-            class="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition"
-            @click="postponeSeance(seance.id)"
-          >
-            Reporter
           </button>
         </div>
       </div>
@@ -69,54 +51,137 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import FullCalendar from '@fullcalendar/vue3'
+import dayGridPlugin from '@fullcalendar/daygrid'
+import interactionPlugin from '@fullcalendar/interaction'
+import listPlugin from '@fullcalendar/list'
 
 const router = useRouter()
 
-const seances = ref([
-  { id: 1, matiere: 'Mathématiques', date: '2025-09-10', heure: '10:00', statut: 'planifie' },
-  { id: 2, matiere: 'Physique', date: '2025-09-11', heure: '14:00', statut: 'valide' },
-  { id: 3, matiere: 'Chimie', date: '2025-09-15', heure: '11:30', statut: 'planifie' },
-  { id: 4, matiere: 'Informatique', date: '2025-09-18', heure: '09:00', statut: 'planifie' }
-])
-
-const validatedSeances = ref(1)
-const reportedSeances = ref(0)
-
-const formatDate = (dateString) => {
-  const options = { weekday: 'long', day: 'numeric', month: 'long' }
-  return new Date(dateString).toLocaleDateString('fr-FR', options)
-}
-
-const getStatusText = (status) => {
-  const statusMap = {
-    'planifie': 'Planifié',
-    'valide': 'Validé',
-    'reporte': 'Reporté'
-  }
-  return statusMap[status] || status
-}
-
-const validateSeance = (id) => {
-  const seance = seances.value.find(s => s.id === id)
-  if (seance) {
-    seance.statut = 'valide'
-    validatedSeances.value++
-  }
-}
-
-const postponeSeance = (id) => {
-  const seance = seances.value.find(s => s.id === id)
-  if (seance) {
-    seance.statut = 'reporte'
-    reportedSeances.value++
-  }
-}
-
+// === Déconnexion ===
 const handleLogout = () => {
   localStorage.removeItem('user')
   localStorage.removeItem('token')
   router.push('/login')
+}
+
+// === Données ===
+const seances = ref([])
+const selectedEvent = ref(null)
+
+// Charger les données depuis API
+const fetchSeances = async () => {
+  try {
+    const token = JSON.parse(localStorage.getItem('token'))
+    const response = await fetch('http://localhost:8000/api/emplois', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    if (!response.ok) throw new Error('Erreur API')
+    seances.value = await response.json()
+  } catch (err) {
+    console.error('Erreur API:', err)
+  }
+}
+
+onMounted(fetchSeances)
+
+// === Conversion des données API vers événements FullCalendar ===
+const getCalendarEvents = () =>
+  seances.value.map((s) => {
+    return {
+      id: s.id_seance,
+      title: s.matiere,
+      start: mapJourToDate(s.jour, s.heure),
+      color: s.statut === 'valide' ? '#34D399'
+            : s.statut === 'reporte' ? '#FBBF24'
+            : '#3B82F6',
+      extendedProps: {
+        jour: s.jour,
+        heure: s.heure,
+        statut: s.statut
+      }
+    }
+  })
+
+// === Options calendrier ===
+const calendarOptions = computed(() => ({
+  plugins: [dayGridPlugin, interactionPlugin, listPlugin],
+  initialView: 'dayGridMonth',
+  headerToolbar: {
+    left: 'prev,next today',
+    center: 'title',
+    right: 'dayGridMonth,dayGridWeek,list'
+  },
+  locale: 'fr',
+  events: getCalendarEvents(),
+  eventClick: handleEventClick,
+  eventContent: (arg) => {
+    const statusText =
+      arg.event.extendedProps.statut === 'valide'
+        ? '✅'
+        : arg.event.extendedProps.statut === 'reporte'
+        ? '⏰'
+        : '⏳'
+    return {
+      html: `
+        <div class="p-1 cursor-pointer">
+          <div class="font-semibold text-sm">${arg.event.title}</div>
+          <div class="text-xs">${arg.event.extendedProps.heure}</div>
+          <div class="text-xs">${statusText}</div>
+        </div>
+      `
+    }
+  }
+}))
+
+// === Modal ===
+function handleEventClick(info) {
+  selectedEvent.value = info.event
+}
+function closeModal() {
+  selectedEvent.value = null
+}
+
+// === Action Valider ===
+const validateSeance = async (id) => {
+  try {
+    const token = JSON.parse(localStorage.getItem('token'))
+    const response = await fetch(`http://localhost:8000/api/seances/${id}/valider`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      }
+    })
+    if (!response.ok) throw new Error('Erreur validation')
+    // Mettre à jour localement
+    const seance = seances.value.find((s) => s.id_seance === id)
+    if (seance) seance.statut = 'valide'
+    closeModal()
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+// === Map jour → date actuelle de la semaine ===
+function mapJourToDate(jour, heure) {
+  const joursMap = {
+    lundi: 1,
+    mardi: 2,
+    mercredi: 3,
+    jeudi: 4,
+    vendredi: 5,
+    samedi: 6,
+    dimanche: 0
+  }
+  const today = new Date()
+  const currentDay = today.getDay()
+  const targetDay = joursMap[jour.toLowerCase()] ?? 1
+  const diff = targetDay - currentDay
+  const eventDate = new Date(today)
+  eventDate.setDate(today.getDate() + diff)
+  return `${eventDate.toISOString().split('T')[0]}T${heure}`
 }
 </script>

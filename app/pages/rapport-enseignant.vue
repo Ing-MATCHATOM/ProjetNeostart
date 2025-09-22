@@ -1,3 +1,57 @@
+<script setup>
+import { ref, onMounted } from 'vue'
+import Editor from '@tinymce/tinymce-vue'  // ✅ Import TinyMCE
+
+const user = ref({})
+const message = ref('')
+const rapport = ref({
+  date: '',
+  heure_debut: '',
+  heure_fin: '',
+  contenu: ''   // TinyMCE va remplir cette valeur
+})
+
+onMounted(() => {
+  const userData = localStorage.getItem('user')
+  if (userData) {
+    user.value = JSON.parse(userData)
+  } else {
+    navigateTo('/login')
+  }
+})
+
+const handleLogout = () => {
+  localStorage.removeItem('user')
+  localStorage.removeItem('token')
+  navigateTo('/login')
+}
+
+const soumettreRapport = async () => {
+  try {
+    const token = JSON.parse(localStorage.getItem('token'))
+    const payload = { ...rapport.value, id_enseignant: user.value.id_enseignant }
+
+    const response = await fetch('http://localhost:8000/api/rapports', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    })
+
+    if (!response.ok) throw new Error('Erreur lors de l\'envoi.')
+
+    message.value = 'Rapport enregistré avec succès'
+    rapport.value = { date: '', heure_debut: '', heure_fin: '', contenu: '' }
+
+  } catch (error) {
+    console.error(error)
+    message.value = 'Une erreur est survenue.'
+  }
+}
+</script>
+
 <template>
   <div class="min-h-screen flex">
     <!-- Sidebar -->
@@ -7,7 +61,6 @@
         <NuxtLink to="dashboard-enseignant" class="nav-link">Accueil</NuxtLink>
         <NuxtLink to="emploi" class="nav-link">Emploi du temps</NuxtLink>
         <NuxtLink to="rapport-enseignant" class="nav-link">Rapports</NuxtLink>
-        <NuxtLink to="/enseignant/validation" class="nav-link">Validation</NuxtLink>
         <NuxtLink to="/enseignant/statistiques" class="nav-link">Statistiques</NuxtLink>
       </nav>
     </div>
@@ -64,13 +117,17 @@
 
           <div class="mb-4">
             <label class="block text-gray-700 mb-1">Contenu du travail effectué</label>
-            <textarea
+            <!-- ✅ TinyMCE Editor -->
+            <Editor
               v-model="rapport.contenu"
-              rows="4"
-              class="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-              placeholder="Décrivez les tâches réalisées..."
-              required
-            ></textarea>
+              api-key="ka00j44uxmx5xxnyrv23a89u450gvux44ggxsphvf8e2ityr"
+              :init="{
+                height: 300,
+                menubar: false,
+                plugins: 'lists link image table code help wordcount',
+                toolbar: 'undo redo | formatselect | bold italic underline | alignleft aligncenter alignright | bullist numlist outdent indent | removeformat | help'
+              }"
+            />
           </div>
 
           <button
@@ -89,71 +146,5 @@
     </div>
   </div>
 </template>
-
-<script setup>
-import { ref, onMounted } from 'vue'
-
-const user = ref({})
-const message = ref('')
-const rapport = ref({
-  date: '',
-  heure_debut: '',
-  heure_fin: '',
-  contenu: ''
-})
-
-onMounted(() => {
-  const userData = localStorage.getItem('user')
-  if (userData) {
-    user.value = JSON.parse(userData)
-  } else {
-    navigateTo('/login')
-  }
-})
-
-const handleLogout = () => {
-  localStorage.removeItem('user')
-  localStorage.removeItem('token')
-  navigateTo('/login')
-}
-
-const soumettreRapport = async () => {
-  try {
-    const token = JSON.parse(localStorage.getItem('token') )// récupère ton token
-
-    const payload = { ...rapport.value, id_enseignant: user.value.id_enseignant }
-
-    const response = await fetch('http://localhost:8000/api/rapports', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}` 
-      },
-      body: JSON.stringify(payload)
-    })
-
-    if (!response.ok) throw new Error('Erreur lors de l\'envoi.')
-
-    message.value = '✅ Rapport enregistré avec succès'
-    rapport.value = { date: '', heure_debut: '', heure_fin: '', contenu: '' }
-
-  } catch (error) {
-    console.error(error)
-    message.value = '❌ Une erreur est survenue.'
-  }
-}
-
-</script>
-
 <style scoped>
-.nav-link {
-  display: block;
-  padding: 10px 14px;
-  border-radius: 8px;
-  font-weight: 500;
-  transition: all 0.3s ease;
-}
-.nav-link:hover {
-  background-color: #4338ca;
-}
-</style>
+ .nav-link { display: block; padding: 10px 14px; border-radius: 8px; font-weight: 500; transition: all 0.3s ease; } .nav-link:hover { background-color: #4338ca; } </style>

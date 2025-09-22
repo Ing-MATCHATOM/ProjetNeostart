@@ -7,7 +7,6 @@
         <NuxtLink to="dashboard-enseignant" class="nav-link">Accueil</NuxtLink>
         <NuxtLink to="emploi" class="nav-link">Emploi du temps</NuxtLink>
         <NuxtLink to="rapport-enseignant" class="nav-link">Rapports</NuxtLink>
-        <NuxtLink to="/enseignant/validation" class="nav-link">Validation</NuxtLink>
         <NuxtLink to="/enseignant/statistiques" class="nav-link">Statistiques</NuxtLink>
       </nav>
     </div>
@@ -34,19 +33,55 @@
         <h2 class="text-2xl font-bold mb-4">Nouvelle séance</h2>
 
         <form @submit.prevent="handleSubmit" class="space-y-4">
+          <!-- Jours avec heure & matière -->
           <div>
-            <label class="block text-gray-700 font-medium mb-1">Date</label>
-            <input type="date" v-model="form.date" required class="w-full border px-3 py-2 rounded" />
-          </div>
+            <label class="block text-gray-700 font-medium mb-2">Jours, Heures & Matières</label>
+            <div class="space-y-3">
+              <div
+                v-for="day in daysOfWeek"
+                :key="day.value"
+                class="flex flex-col md:flex-row md:items-center md:space-x-4 p-2 border rounded"
+              >
+                <div class="flex items-center space-x-2 mb-2 md:mb-0">
+                  <input
+                    type="checkbox"
+                    :value="day.value"
+                    v-model="selectedDays"
+                    class="rounded border-gray-300"
+                  />
+                  <span class="w-24">{{ day.label }}</span>
+                </div>
 
-          <div>
-            <label class="block text-gray-700 font-medium mb-1">Heure</label>
-            <input type="time" v-model="form.heure" required class="w-full border px-3 py-2 rounded" />
-          </div>
+                <!-- Champ heure -->
+                <input
+                  v-if="selectedDays.includes(day.value)"
+                  type="time"
+                  v-model="form[day.value].heure"
+                  class="border px-2 py-1 rounded w-32"
+                />
 
-          <div>
-            <label class="block text-gray-700 font-medium mb-1">Matière</label>
-            <input type="text" v-model="form.matiere" required placeholder="Ex: Maths" class="w-full border px-3 py-2 rounded" />
+                <!-- Champ matière -->
+                <input
+                  v-if="selectedDays.includes(day.value)"
+                  type="text"
+                  v-model="form[day.value].matiere"
+                  placeholder="Ex: Maths"
+                  class="border px-2 py-1 rounded flex-1"
+                />
+
+                <!-- Sélection des élèves -->
+                <select
+                  v-if="selectedDays.includes(day.value)"
+                  v-model="form[day.value].eleveId"
+                  class="border px-2 py-1 rounded w-full md:w-48"
+                >
+                  <option value="" disabled>-- Sélectionner --</option>
+                  <option v-for="e in eleves" :key="e.id" :value="e.id">
+                    {{ e.nom_famille }} {{ e.prenom }}
+                  </option>
+                </select>
+              </div>
+            </div>
           </div>
 
           <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
@@ -58,102 +93,104 @@
         <p v-if="successMessage" class="text-green-600 mt-3">{{ successMessage }}</p>
         <p v-if="errorMessage" class="text-red-600 mt-3">{{ errorMessage }}</p>
       </div>
-
-      <!-- Liste des séances -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div v-if="seances.length === 0" class="text-gray-500 col-span-full">
-          Aucune séance programmée.
-        </div>
-
-        <div v-for="(seance, index) in seances" :key="index" class="dashboard-card">
-          <i class="fas fa-calendar-alt dashboard-icon bg-indigo-100 text-indigo-600"></i>
-          <div>
-            <p><strong>Date:</strong> {{ formatDate(seance.date) }}</p>
-            <p><strong>Heure:</strong> {{ seance.heure }}</p>
-            <p><strong>Matière:</strong> {{ seance.matiere }}</p>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
 
-<script setup>
-import { ref, reactive, onMounted } from 'vue'
 
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 const user = ref({})
 const successMessage = ref('')
 const errorMessage = ref('')
 
+// Jours de la semaine
+const daysOfWeek = [
+  { value: 'lundi', label: 'Lundi' },
+  { value: 'mardi', label: 'Mardi' },
+  { value: 'mercredi', label: 'Mercredi' },
+  { value: 'jeudi', label: 'Jeudi' },
+  { value: 'vendredi', label: 'Vendredi' },
+  { value: 'samedi', label: 'Samedi' },
+  { value: 'dimanche', label: 'Dimanche' },
+]
+
+// jours cochés
+const selectedDays = ref([])
+
+// objet qui stocke { jour: {heure, matiere, eleveId} }
+const form = ref({})
+daysOfWeek.forEach(day => {
+  form.value[day.value] = { heure: '', matiere: '', eleveId: '' }
+})
+
+// Liste des élèves
+const eleves = ref([])
+
 // Charger utilisateur
-onMounted(() => {
+onMounted(async () => {
   const userData = localStorage.getItem('user')
   if (userData) {
     user.value = JSON.parse(userData)
   } else {
-    navigateTo('/login')
+    router.push('/login')
   }
-})
 
-// Formulaire de séance
-const form = ref({
-  date: '',
-  heure: '',
-  matiere: ''
-})
-
-// Liste des séances
-const seances = ref([])
-
-// Charger les séances existantes
-async function fetchSeances() {
+  const token = JSON.parse(localStorage.getItem('token'))
   try {
-    const data = await $fetch('/api/seances') // endpoint pour récupérer les séances
-    seances.value = data
-  } catch (err) {
-    errorMessage.value = "Impossible de charger les séances."
-    console.error('Erreur chargement:', err)
-  }
-}
+    const res = await fetch('http://localhost:8000/api/mes-eleves', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    const data = await res.json()
+    console.log('Réponse API mes-eleves:', data)
 
-// Soumettre le formulaire et enregistrer via l'API
+    // Vérifie si c'est data.data ou directement un tableau
+    eleves.value = Array.isArray(data) ? data : data.data || []
+  } catch (err) {
+    console.error('Erreur chargement élèves:', err)
+  }
+})
+
+
+// Soumettre formulaire
 const handleSubmit = async () => {
   successMessage.value = ''
   errorMessage.value = ''
   try {
     const token = JSON.parse(localStorage.getItem('token'))
 
-    // Préparer le payload pour l'API seances
-    const payload = {
-      jour: form.value.date,            // si ton backend attend "jour"
-      heure: form.value.heure,
-      matiere: form.value.matiere,
+    // Construire tableau des séances
+    const payload = selectedDays.value.map(jour => ({
+      jour,
+      heure: form.value[jour].heure,
+      matiere: form.value[jour].matiere,
+      eleve_id: form.value[jour].eleveId
+    }))
 
-    }
-
-    // Appel API POST pour enregistrer la séance
     const response = await fetch('http://localhost:8000/api/emploi', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}` // ⚡ backticks obligatoires
+        Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({ seances: payload })
     })
 
     if (!response.ok) throw new Error('Erreur lors de l\'envoi.')
 
-    successMessage.value = '✅ Séance enregistrée avec succès'
-    form.date = ''
-    form.heure = ''
-    form.matiere = ''
+    successMessage.value = 'Séances enregistrées avec succès'
+    selectedDays.value = []
 
-    // Rafraîchir la liste des séances
-    fetchSeances()
-
+    // Réinitialiser le form
+    daysOfWeek.forEach(day => {
+      form.value[day.value] = { heure: '', matiere: '', eleveId: '' }
+    })
   } catch (err) {
     console.error(err)
-    errorMessage.value = '❌ Une erreur est survenue.'
+    errorMessage.value = 'Une erreur est survenue.'
   }
 }
 
@@ -161,18 +198,9 @@ const handleSubmit = async () => {
 const handleLogout = () => {
   localStorage.removeItem('user')
   localStorage.removeItem('token')
-  navigateTo('/login')
-}
-
-onMounted(fetchSeances)
-
-// Formater la date pour l'affichage
-function formatDate(dateStr) {
-  return new Date(dateStr).toLocaleDateString('fr-FR')
+  router.push('/login')
 }
 </script>
-
-
 
 <style scoped>
 .nav-link {
@@ -184,29 +212,5 @@ function formatDate(dateStr) {
 }
 .nav-link:hover {
   background-color: #4338ca; 
-}
-
-.dashboard-card {
-  display: flex;
-  align-items: center;
-  padding: 16px;
-  border-radius: 12px;
-  gap: 12px;
-  background: white;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-  transition: all 0.3s;
-}
-.dashboard-card:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
-.dashboard-icon {
-  width: 50px;
-  height: 50px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
 }
 </style>

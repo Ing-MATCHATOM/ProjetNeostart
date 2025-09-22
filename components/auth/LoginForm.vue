@@ -156,7 +156,7 @@ const handleLogin = async () => {
       } else if (response.role === 'enseignant') {
         navigateTo('/dashboard-enseignant')
       } else if (response.role === 'temoin') {
-        navigateTo('/dashboard-temoin')
+        navigateTo('/dashboard-eleve')
       }
 
     } else if (response && response.data && response.data.user) {
@@ -174,7 +174,7 @@ const handleLogin = async () => {
       } else if (response.role === 'enseignant') {
         navigateTo('/dashboard-enseignant')
       } else if (response.role === 'temoin') {
-        navigateTo('/dashboard-temoin')
+        navigateTo('/dashboard-eleve')
       }
 
     } else {
