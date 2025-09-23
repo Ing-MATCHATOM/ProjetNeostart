@@ -14,7 +14,7 @@
       >
         <div class="flex justify-between items-center">
           <h2 class="text-xl font-semibold text-indigo-700">
-            Rapport du {{ r.date }}
+            Rapport du {{ r.date_rapport }}
           </h2>
           <button
             @click="supprimerRapport(r.id)"
