@@ -7,9 +7,8 @@
         <NuxtLink to="/parent/create-enseignant" class="nav-link">Créer Enseignant</NuxtLink>
         <NuxtLink to="/parent/create-eleve" class="nav-link">Créer Élève</NuxtLink>
         <NuxtLink to="/parent/create-temoin" class="nav-link">Créer Témoin</NuxtLink>
-        <a href="#" class="nav-link">Rapports & Statistiques</a>
-        <a href="#" class="nav-link">Emploi du Temps</a>
-        <a href="#" class="nav-link">Validation des Séances</a>
+        <a href="/parent/rapport-parent" class="nav-link">Rapports & Statistiques</a>
+        <a href="/parent/emploi-parent" class="nav-link">Emploi du Temps</a>
       </nav>
     </div>
 

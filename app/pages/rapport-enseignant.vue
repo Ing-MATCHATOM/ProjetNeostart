@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import Editor from '@tinymce/tinymce-vue'  // ✅ Import TinyMCE
+import Editor from '@tinymce/tinymce-vue'  // ✅ TinyMCE
 
 const user = ref({})
 const message = ref('')
@@ -8,15 +8,26 @@ const rapport = ref({
   date: '',
   heure_debut: '',
   heure_fin: '',
-  contenu: ''   // TinyMCE va remplir cette valeur
+  contenu: '',
+  parent_id: ''   // ✅ ajouté pour stocker le parent sélectionné
 })
 
-onMounted(() => {
+const parents = ref([])
+
+onMounted(async () => {
   const userData = localStorage.getItem('user')
-  if (userData) {
-    user.value = JSON.parse(userData)
-  } else {
-    navigateTo('/login')
+  if (userData) user.value = JSON.parse(userData)
+  else router.push('/login')
+
+  const token = JSON.parse(localStorage.getItem('token'))
+  try {
+    const res = await fetch('http://localhost:8000/api/mes-eleves', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    const data = await res.json()
+    parents.value = data.parent || {}
+  } catch (err) {
+    console.error('Erreur chargement des parents:', err)
   }
 })
 
@@ -29,7 +40,10 @@ const handleLogout = () => {
 const soumettreRapport = async () => {
   try {
     const token = JSON.parse(localStorage.getItem('token'))
-    const payload = { ...rapport.value, id_enseignant: user.value.id_enseignant }
+    const payload = { 
+      ...rapport.value, 
+      id_enseignant: user.value.id_enseignant 
+    }
 
     const response = await fetch('http://localhost:8000/api/rapports', {
       method: 'POST',
@@ -42,12 +56,12 @@ const soumettreRapport = async () => {
 
     if (!response.ok) throw new Error('Erreur lors de l\'envoi.')
 
-    message.value = 'Rapport enregistré avec succès'
-    rapport.value = { date: '', heure_debut: '', heure_fin: '', contenu: '' }
+    message.value = '✅ Rapport enregistré avec succès'
+    rapport.value = { date: '', heure_debut: '', heure_fin: '', contenu: '', parent_id: '' }
 
   } catch (error) {
     console.error(error)
-    message.value = 'Une erreur est survenue.'
+    message.value = '❌ Une erreur est survenue.'
   }
 }
 </script>
@@ -130,6 +144,24 @@ const soumettreRapport = async () => {
             />
           </div>
 
+          <div class="mb-4">
+            <label class="block text-gray-700 mb-1">Parent concerné</label>
+            <select
+              v-model="rapport.parent_id"
+              class="border px-2 py-1 rounded w-full"
+              required
+            >
+              <option value="" disabled>-- Sélectionner un Parent --</option>
+              <option
+                v-if="parents && parents.parent_id"
+                :value="parents.parent_id"
+              >
+                {{ parents.parent_nom }} {{ parents.parent_prenom }}
+              </option>
+
+            </select>
+          </div>
+
           <button
             type="submit"
             class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-6 rounded"
@@ -146,5 +178,14 @@ const soumettreRapport = async () => {
     </div>
   </div>
 </template>
+
 <style scoped>
- .nav-link { display: block; padding: 10px 14px; border-radius: 8px; font-weight: 500; transition: all 0.3s ease; } .nav-link:hover { background-color: #4338ca; } </style>
+.nav-link { 
+  display: block; 
+  padding: 10px 14px; 
+  border-radius: 8px; 
+  font-weight: 500; 
+  transition: all 0.3s ease; 
+} 
+.nav-link:hover { background-color: #4338ca; } 
+</style>

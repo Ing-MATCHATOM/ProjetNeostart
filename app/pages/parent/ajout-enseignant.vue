@@ -54,27 +54,6 @@
               </select>
             </div>
 
-            <!-- Classe d'intervention -->
-            <div>
-              <label class="block text-gray-700 mb-1">Classe d'intervention</label>
-              <input v-model="form.classe" type="text" placeholder="Ex: 4ème, 3ème..." required
-                     class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none"/>
-            </div>
-
-            <!-- Nombre d'enfants -->
-            <div>
-              <label class="block text-gray-700 mb-1">Nombre d'enfants</label>
-              <input v-model.number="form.nbre_enfant" type="number" min="0" required
-                     class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none"/>
-            </div>
-
-            <!-- Matière -->
-            <div>
-              <label class="block text-gray-700 mb-1">Matière</label>
-              <input v-model="form.matiere" type="text" placeholder="Ex: Mathématiques, Physique..." required
-                     class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none"/>
-            </div>
-
             <!-- Salaire -->
             <div>
               <label class="block text-gray-700 mb-1">Salaire (FCFA)</label>

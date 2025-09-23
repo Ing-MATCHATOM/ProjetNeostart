@@ -2,7 +2,7 @@
   <div class="p-6 bg-gray-100 min-h-screen">
     <!-- Header -->
     <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold">Tableau de bord Élève</h1>
+      <h1 class="text-2xl font-bold">Tableau de bord Témoin</h1>
       <button
         @click="handleLogout"
         class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition"
@@ -71,21 +71,20 @@ const handleLogout = () => {
 const seances = ref([])
 const selectedEvent = ref(null)
 
-// Charger les données depuis API
+// Charger les séances où l'utilisateur est témoin
 const fetchSeances = async () => {
   try {
     const token = JSON.parse(localStorage.getItem('token'))
-    const response = await fetch('http://localhost:8000/api/emplois-eleve', {
+    const response = await fetch('http://localhost:8000/api/emplois-temoin', { // ⚡ URL pour témoin
       headers: { Authorization: `Bearer ${token}` }
     })
     if (!response.ok) throw new Error('Erreur API')
     seances.value = await response.json()
-    console.log('Séances élève connecté:', seances.value)
+    console.log('Séances témoin connecté:', seances.value)
   } catch (err) {
     console.error('Erreur API:', err)
   }
 }
-
 
 onMounted(fetchSeances)
 
@@ -158,7 +157,6 @@ const validateSeance = async (id) => {
       }
     })
     if (!response.ok) throw new Error('Erreur validation')
-    // Mettre à jour localement
     const seance = seances.value.find((s) => s.id_seance === id)
     if (seance) seance.statut = 'valide'
     closeModal()

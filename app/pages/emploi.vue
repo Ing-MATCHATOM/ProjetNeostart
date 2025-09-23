@@ -33,9 +33,10 @@
         <h2 class="text-2xl font-bold mb-4">Nouvelle séance</h2>
 
         <form @submit.prevent="handleSubmit" class="space-y-4">
-          <!-- Jours avec heure & matière -->
           <div>
-            <label class="block text-gray-700 font-medium mb-2">Jours, Heures & Matières</label>
+            <label class="block text-gray-700 font-medium mb-2">
+              Jours, Heures, Matières, Élèves & Témoins
+            </label>
             <div class="space-y-3">
               <div
                 v-for="day in daysOfWeek"
@@ -52,7 +53,7 @@
                   <span class="w-24">{{ day.label }}</span>
                 </div>
 
-                <!-- Champ heure -->
+                <!-- Heure -->
                 <input
                   v-if="selectedDays.includes(day.value)"
                   type="time"
@@ -60,7 +61,7 @@
                   class="border px-2 py-1 rounded w-32"
                 />
 
-                <!-- Champ matière -->
+                <!-- Matière -->
                 <input
                   v-if="selectedDays.includes(day.value)"
                   type="text"
@@ -69,22 +70,63 @@
                   class="border px-2 py-1 rounded flex-1"
                 />
 
-                <!-- Sélection des élèves -->
-                <select
+                <!-- Sélection Élève & Témoin -->
+                <div
                   v-if="selectedDays.includes(day.value)"
-                  v-model="form[day.value].eleveId"
-                  class="border px-2 py-1 rounded w-full md:w-48"
+                  class="flex flex-col md:flex-row md:space-x-4 space-y-2 md:space-y-0"
                 >
-                  <option value="" disabled>-- Sélectionner --</option>
-                  <option v-for="e in eleves" :key="e.id" :value="e.id">
-                    {{ e.nom_famille }} {{ e.prenom }}
-                  </option>
-                </select>
+                  <!-- Élèves -->
+                  <select
+                    v-model="form[day.value].eleveId"
+                    class="border px-2 py-1 rounded w-full md:w-48"
+                  >
+                    <option value="" disabled>-- Sélectionner un élève --</option>
+                    <option
+                      v-for="e in eleves"
+                      :key="e.eleve_id"
+                      :value="e.eleve_id"
+                    >
+                      {{ e.eleve_nom }} {{ e.eleve_prenom }}
+                    </option>
+                  </select>
+
+                  <!-- Témoins -->
+                  <select
+                    v-model="form[day.value].temoinId"
+                    class="border px-2 py-1 rounded w-full md:w-48"
+                  >
+                    <option value="" disabled>-- Sélectionner un témoin --</option>
+                    <option
+                      v-for="t in temoins"
+                      :key="t.temoin_id"
+                      :value="t.temoin_id"
+                    >
+                      {{ t.temoin_nom }} {{ t.temoin_prenom }}
+                    </option>
+                  </select>
+                  <!-- Témoins -->
+                  <select
+                    v-model="form[day.value].temoinId"
+                    class="border px-2 py-1 rounded w-full md:w-48"
+                  >
+                    <option value="" disabled>-- Sélectionner un Parent --</option>
+                    <option
+                      v-for="t in parents"
+                      :key="t.parent_id"
+                      :value="t.parent_id"
+                    >
+                      {{ t.parent_nom }} {{ t.parent_prenom }}
+                    </option>
+                  </select>
+                </div>
               </div>
             </div>
           </div>
 
-          <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+          <button
+            type="submit"
+            class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
             Enregistrer
           </button>
         </form>
@@ -96,7 +138,6 @@
     </div>
   </div>
 </template>
-
 
 <script setup>
 import { ref, onMounted } from 'vue'
@@ -121,23 +162,22 @@ const daysOfWeek = [
 // jours cochés
 const selectedDays = ref([])
 
-// objet qui stocke { jour: {heure, matiere, eleveId} }
+// Formulaire initialisé
 const form = ref({})
 daysOfWeek.forEach(day => {
-  form.value[day.value] = { heure: '', matiere: '', eleveId: '' }
+  form.value[day.value] = { heure: '', matiere: '', eleveId: '', temoinId: '' ,parentId:''}
 })
 
-// Liste des élèves
+// Liste des élèves et témoins
 const eleves = ref([])
+const temoins = ref([])
+const parents = ref([])
 
-// Charger utilisateur
+// Charger utilisateur, élèves et témoins
 onMounted(async () => {
   const userData = localStorage.getItem('user')
-  if (userData) {
-    user.value = JSON.parse(userData)
-  } else {
-    router.push('/login')
-  }
+  if (userData) user.value = JSON.parse(userData)
+  else router.push('/login')
 
   const token = JSON.parse(localStorage.getItem('token'))
   try {
@@ -145,29 +185,29 @@ onMounted(async () => {
       headers: { Authorization: `Bearer ${token}` }
     })
     const data = await res.json()
-    console.log('Réponse API mes-eleves:', data)
-
-    // Vérifie si c'est data.data ou directement un tableau
-    eleves.value = Array.isArray(data) ? data : data.data || []
+    eleves.value = data.eleves || []
+    temoins.value = data.temoins || []
+    parents.value = data.parent ? [data.parent] : []
   } catch (err) {
-    console.error('Erreur chargement élèves:', err)
+    console.error('Erreur chargement élèves ou témoins:', err)
   }
 })
 
-
-// Soumettre formulaire
+// Soumettre le formulaire
 const handleSubmit = async () => {
   successMessage.value = ''
   errorMessage.value = ''
+
   try {
     const token = JSON.parse(localStorage.getItem('token'))
 
-    // Construire tableau des séances
     const payload = selectedDays.value.map(jour => ({
       jour,
       heure: form.value[jour].heure,
       matiere: form.value[jour].matiere,
-      eleve_id: form.value[jour].eleveId
+      eleve_id: form.value[jour].eleveId,
+      temoin_id: form.value[jour].temoinId,
+      parent_id: form.value[jour].parentId
     }))
 
     const response = await fetch('http://localhost:8000/api/emploi', {
@@ -184,9 +224,9 @@ const handleSubmit = async () => {
     successMessage.value = 'Séances enregistrées avec succès'
     selectedDays.value = []
 
-    // Réinitialiser le form
+    // Réinitialiser le formulaire
     daysOfWeek.forEach(day => {
-      form.value[day.value] = { heure: '', matiere: '', eleveId: '' }
+      form.value[day.value] = { heure: '', matiere: '', eleveId: '', temoinId: '' }
     })
   } catch (err) {
     console.error(err)
@@ -211,6 +251,6 @@ const handleLogout = () => {
   transition: all 0.3s ease;
 }
 .nav-link:hover {
-  background-color: #4338ca; 
+  background-color: #4338ca;
 }
 </style>
