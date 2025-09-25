@@ -90,24 +90,8 @@ const fetchSeances = async () => {
 onMounted(fetchSeances)
 
 // === Conversion des données API vers événements FullCalendar ===
-const getCalendarEvents = () =>
-  seances.value.map((s) => {
-    return {
-      id: s.id_seance,
-      title: s.matiere,
-      start: mapJourToDate(s.jour, s.heure),
-      color: s.statut === 'valide' ? '#34D399'
-            : s.statut === 'reporte' ? '#FBBF24'
-            : '#3B82F6',
-      extendedProps: {
-        jour: s.jour,
-        heure: s.heure,
-        statut: s.statut
-      }
-    }
-  })
+const calendarEvents = computed(() => getCalendarEvents())
 
-// === Options calendrier ===
 const calendarOptions = computed(() => ({
   plugins: [dayGridPlugin, interactionPlugin, listPlugin],
   initialView: 'dayGridMonth',
@@ -117,7 +101,7 @@ const calendarOptions = computed(() => ({
     right: 'dayGridMonth,dayGridWeek,list'
   },
   locale: 'fr',
-  events: getCalendarEvents(),
+  events: calendarEvents.value, // ✅ bind au computed
   eventClick: handleEventClick,
   eventContent: (arg) => {
     const statusText =
@@ -137,6 +121,7 @@ const calendarOptions = computed(() => ({
     }
   }
 }))
+
 
 // === Modal ===
 function handleEventClick(info) {

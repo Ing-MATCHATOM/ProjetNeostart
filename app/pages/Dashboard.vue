@@ -9,6 +9,9 @@
         <NuxtLink to="/parent/create-temoin" class="nav-link">Créer Témoin</NuxtLink>
         <a href="/parent/rapport-parent" class="nav-link">Rapports & Statistiques</a>
         <a href="/parent/emploi-parent" class="nav-link">Emploi du Temps</a>
+        <a href="/parent/mesreports" class="nav-link">Reports</a>
+        <a href="/parent/stat" class="nav-link">Statistiques</a>
+        
       </nav>
     </div>
 

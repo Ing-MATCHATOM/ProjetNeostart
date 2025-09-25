@@ -1,256 +1,331 @@
 <template>
-  <div class="min-h-screen flex bg-gray-50">
-    <!-- Sidebar -->
-    <div class="w-64 bg-indigo-800 text-white p-6 flex flex-col">
-      <h2 class="text-2xl font-bold mb-8">Enseignant</h2>
-      <nav class="space-y-4">
-        <NuxtLink to="dashboard-enseignant" class="nav-link">Accueil</NuxtLink>
-        <NuxtLink to="emploi" class="nav-link">Emploi du temps</NuxtLink>
-        <NuxtLink to="rapport-enseignant" class="nav-link">Rapports</NuxtLink>
-        <NuxtLink to="/enseignant/statistiques" class="nav-link">Statistiques</NuxtLink>
-      </nav>
+  <div class="p-6 bg-gray-100 min-h-screen">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-bold">Tableau de bord Parent</h1>
+      <button
+        @click="handleLogout"
+        class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition"
+      >
+        Déconnexion
+      </button>
     </div>
 
-    <!-- Contenu principal -->
-    <div class="flex-1 p-8">
-      <!-- Header -->
-      <div class="flex justify-between items-center mb-8">
-        <div>
-          <h1 class="text-3xl font-bold text-gray-800">Programmer une séance</h1>
-          <p class="text-gray-600">{{ user.prenom }} {{ user.nom_famille }}</p>
-          <p class="text-sm text-gray-500">{{ user.courriel }}</p>
-        </div>
-        <button
-          @click="handleLogout"
-          class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition"
-        >
-          Déconnexion
-        </button>
+    <!-- Calendrier -->
+    <div class="bg-white shadow rounded-lg p-4">
+      <h2 class="text-xl font-semibold mb-4">Emploi du temps des enseignants</h2>
+      <div class="h-[650px] overflow-auto">
+        <FullCalendar :options="calendarOptions" />
       </div>
+    </div>
 
-      <!-- Formulaire de séance -->
-      <div class="bg-white p-6 rounded shadow-md max-w-xl mb-8">
-        <h2 class="text-2xl font-bold mb-4">Nouvelle séance</h2>
+    <!-- Modal -->
+    <div
+      v-if="selectedEvent"
+      class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50"
+    >
+      <div class="bg-white rounded-lg shadow-lg w-96 p-6">
+        <h3 class="text-lg font-bold mb-2">{{ selectedEvent.title }}</h3>
+        <p><strong>Jour :</strong> {{ selectedEvent.extendedProps.jour }}</p>
+        <p><strong>Heure :</strong> {{ selectedEvent.extendedProps.heure }}</p>
+        <p><strong>Enseignant :</strong> {{ selectedEvent.extendedProps.enseignant }}</p>
+        <p><strong>Statut :</strong> {{ selectedEvent.extendedProps.statut }}</p>
 
-        <form @submit.prevent="handleSubmit" class="space-y-4">
-          <div>
-            <label class="block text-gray-700 font-medium mb-2">
-              Jours, Heures, Matières, Élèves & Témoins
-            </label>
-            <div class="space-y-3">
-              <div
-                v-for="day in daysOfWeek"
-                :key="day.value"
-                class="flex flex-col md:flex-row md:items-center md:space-x-4 p-2 border rounded"
-              >
-                <div class="flex items-center space-x-2 mb-2 md:mb-0">
-                  <input
-                    type="checkbox"
-                    :value="day.value"
-                    v-model="selectedDays"
-                    class="rounded border-gray-300"
-                  />
-                  <span class="w-24">{{ day.label }}</span>
-                </div>
-
-                <!-- Heure -->
-                <input
-                  v-if="selectedDays.includes(day.value)"
-                  type="time"
-                  v-model="form[day.value].heure"
-                  class="border px-2 py-1 rounded w-32"
-                />
-
-                <!-- Matière -->
-                <input
-                  v-if="selectedDays.includes(day.value)"
-                  type="text"
-                  v-model="form[day.value].matiere"
-                  placeholder="Ex: Maths"
-                  class="border px-2 py-1 rounded flex-1"
-                />
-
-                <!-- Sélection Élève & Témoin -->
-                <div
-                  v-if="selectedDays.includes(day.value)"
-                  class="flex flex-col md:flex-row md:space-x-4 space-y-2 md:space-y-0"
-                >
-                  <!-- Élèves -->
-                  <select
-                    v-model="form[day.value].eleveId"
-                    class="border px-2 py-1 rounded w-full md:w-48"
-                  >
-                    <option value="" disabled>-- Sélectionner un élève --</option>
-                    <option
-                      v-for="e in eleves"
-                      :key="e.eleve_id"
-                      :value="e.eleve_id"
-                    >
-                      {{ e.eleve_nom }} {{ e.eleve_prenom }}
-                    </option>
-                  </select>
-
-                  <!-- Témoins -->
-                  <select
-                    v-model="form[day.value].temoinId"
-                    class="border px-2 py-1 rounded w-full md:w-48"
-                  >
-                    <option value="" disabled>-- Sélectionner un témoin --</option>
-                    <option
-                      v-for="t in temoins"
-                      :key="t.temoin_id"
-                      :value="t.temoin_id"
-                    >
-                      {{ t.temoin_nom }} {{ t.temoin_prenom }}
-                    </option>
-                  </select>
-                  <!-- Témoins -->
-                  <select
-                    v-model="form[day.value].temoinId"
-                    class="border px-2 py-1 rounded w-full md:w-48"
-                  >
-                    <option value="" disabled>-- Sélectionner un Parent --</option>
-                    <option
-                      v-for="t in parents"
-                      :key="t.parent_id"
-                      :value="t.parent_id"
-                    >
-                      {{ t.parent_nom }} {{ t.parent_prenom }}
-                    </option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
+        <!-- Actions principales -->
+        <div class="flex justify-end space-x-2 mt-4">
+          <button
+            class="px-4 py-2 bg-gray-400 text-white rounded-md"
+            @click="closeModal"
+          >
+            Fermer
+          </button>
 
           <button
-            type="submit"
-            class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            class="px-4 py-2 text-white rounded-md"
+            :class="toggleButtonColor"
+            @click="toggleSeanceValidation(selectedEvent.id)"
           >
-            Enregistrer
+            {{ toggleButtonText }}
           </button>
-        </form>
 
-        <!-- Messages -->
-        <p v-if="successMessage" class="text-green-600 mt-3">{{ successMessage }}</p>
-        <p v-if="errorMessage" class="text-red-600 mt-3">{{ errorMessage }}</p>
+          <button
+            class="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600"
+            @click="showReportForm = !showReportForm"
+          >
+            Reporter
+          </button>
+
+          <button
+            class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
+            @click="deleteSeance(selectedEvent.id)"
+          >
+            Supprimer
+          </button>
+        </div>
+
+        <!-- Formulaire de report -->
+        <div v-if="showReportForm" class="mt-4 space-y-4">
+          <div>
+            <label class="block text-sm font-medium mb-1">Nouvelle date & heure</label>
+            <input
+              v-model="reportDate"
+              type="datetime-local"
+              class="w-full border rounded px-3 py-2"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium mb-1">Motif du report</label>
+            <textarea
+              v-model="reportReason"
+              rows="3"
+              class="w-full border rounded px-3 py-2"
+              placeholder="Ex: indisponibilité, conflit de salle, etc."
+            ></textarea>
+          </div>
+
+          <div class="flex justify-end space-x-2">
+            <button
+              class="px-4 py-2 bg-gray-300 text-black rounded-md hover:bg-gray-400"
+              @click="showReportForm = false"
+            >
+              Annuler
+            </button>
+            <button
+              class="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600"
+              @click="reportSeance"
+            >
+              Confirmer le report
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import FullCalendar from '@fullcalendar/vue3'
+import dayGridPlugin from '@fullcalendar/daygrid'
+import interactionPlugin from '@fullcalendar/interaction'
+import listPlugin from '@fullcalendar/list'
 
 const router = useRouter()
-const user = ref({})
-const successMessage = ref('')
-const errorMessage = ref('')
 
-// Jours de la semaine
-const daysOfWeek = [
-  { value: 'lundi', label: 'Lundi' },
-  { value: 'mardi', label: 'Mardi' },
-  { value: 'mercredi', label: 'Mercredi' },
-  { value: 'jeudi', label: 'Jeudi' },
-  { value: 'vendredi', label: 'Vendredi' },
-  { value: 'samedi', label: 'Samedi' },
-  { value: 'dimanche', label: 'Dimanche' },
-]
-
-// jours cochés
-const selectedDays = ref([])
-
-// Formulaire initialisé
-const form = ref({})
-daysOfWeek.forEach(day => {
-  form.value[day.value] = { heure: '', matiere: '', eleveId: '', temoinId: '' ,parentId:''}
-})
-
-// Liste des élèves et témoins
-const eleves = ref([])
-const temoins = ref([])
-const parents = ref([])
-
-// Charger utilisateur, élèves et témoins
-onMounted(async () => {
-  const userData = localStorage.getItem('user')
-  if (userData) user.value = JSON.parse(userData)
-  else router.push('/login')
-
-  const token = JSON.parse(localStorage.getItem('token'))
-  try {
-    const res = await fetch('http://localhost:8000/api/mes-eleves', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    const data = await res.json()
-    eleves.value = data.eleves || []
-    temoins.value = data.temoins || []
-    parents.value = data.parent ? [data.parent] : []
-  } catch (err) {
-    console.error('Erreur chargement élèves ou témoins:', err)
-  }
-})
-
-// Soumettre le formulaire
-const handleSubmit = async () => {
-  successMessage.value = ''
-  errorMessage.value = ''
-
-  try {
-    const token = JSON.parse(localStorage.getItem('token'))
-
-    const payload = selectedDays.value.map(jour => ({
-      jour,
-      heure: form.value[jour].heure,
-      matiere: form.value[jour].matiere,
-      eleve_id: form.value[jour].eleveId,
-      temoin_id: form.value[jour].temoinId,
-      parent_id: form.value[jour].parentId
-    }))
-
-    const response = await fetch('http://localhost:8000/api/emploi', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({ seances: payload })
-    })
-
-    if (!response.ok) throw new Error('Erreur lors de l\'envoi.')
-
-    successMessage.value = 'Séances enregistrées avec succès'
-    selectedDays.value = []
-
-    // Réinitialiser le formulaire
-    daysOfWeek.forEach(day => {
-      form.value[day.value] = { heure: '', matiere: '', eleveId: '', temoinId: '' }
-    })
-  } catch (err) {
-    console.error(err)
-    errorMessage.value = 'Une erreur est survenue.'
-  }
-}
-
-// Déconnexion
+// === Déconnexion ===
 const handleLogout = () => {
   localStorage.removeItem('user')
   localStorage.removeItem('token')
   router.push('/login')
 }
-</script>
 
-<style scoped>
-.nav-link {
-  display: block;
-  padding: 10px 14px;
-  border-radius: 8px;
-  font-weight: 500;
-  transition: all 0.3s ease;
+// === Données ===
+const seances = ref([])
+const selectedEvent = ref(null)
+
+// Formulaire report
+const showReportForm = ref(false)
+const reportDate = ref('')
+const reportReason = ref('')
+
+// Charger les données depuis API
+const fetchSeances = async () => {
+  try {
+    const token = JSON.parse(localStorage.getItem('token'))
+    const response = await fetch('http://localhost:8000/api/emplois-enseignant', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    if (!response.ok) throw new Error('Erreur API')
+    seances.value = await response.json()
+    console.log('Séances élève connecté:', seances.value)
+  } catch (err) {
+    console.error('Erreur API:', err)
+  }
 }
-.nav-link:hover {
-  background-color: #4338ca;
+onMounted(fetchSeances)
+
+// === Conversion des données API vers événements FullCalendar ===
+function mapJourToDate(jour, heure) {
+  const joursMap = {
+    lundi: 1,
+    mardi: 2,
+    mercredi: 3,
+    jeudi: 4,
+    vendredi: 5,
+    samedi: 6,
+    dimanche: 0
+  }
+  const today = new Date()
+  const currentDay = today.getDay()
+  const targetDay = joursMap[jour.toLowerCase()] ?? 1
+  const diff = targetDay - currentDay
+  const eventDate = new Date(today)
+  eventDate.setDate(today.getDate() + diff)
+  return `${eventDate.toISOString().split('T')[0]}T${heure}`
 }
-</style>
+
+const getCalendarEvents = () =>
+  seances.value.map((s) => {
+    return {
+      id: s.id,
+      title: s.matiere,
+      start: mapJourToDate(s.jour, s.heure),
+      color:
+        s.statut === 'valide'
+          ? '#34D399'
+          : s.statut === 'reporte'
+          ? '#FBBF24'
+          : '#3B82F6',
+      extendedProps: {
+        jour: s.jour,
+        heure: s.heure,
+        statut: s.statut,
+        enseignant: s.enseignant || 'Non renseigné'
+      }
+    }
+  })
+
+// === Événements réactifs ===
+const calendarEvents = computed(() => getCalendarEvents())
+
+// === Options calendrier ===
+const calendarOptions = computed(() => ({
+  plugins: [dayGridPlugin, interactionPlugin, listPlugin],
+  initialView: 'dayGridMonth',
+  headerToolbar: {
+    left: 'prev,next today',
+    center: 'title',
+    right: 'dayGridMonth,dayGridWeek,list'
+  },
+  locale: 'fr',
+  events: calendarEvents.value,
+  eventClick: handleEventClick,
+  eventContent: (arg) => {
+    const statusText =
+      arg.event.extendedProps.statut === 'valide'
+        ? '✅'
+        : arg.event.extendedProps.statut === 'reporte'
+        ? '⏰'
+        : '⏳'
+    return {
+      html: `
+        <div class="p-1 cursor-pointer">
+          <div class="font-semibold text-sm">${arg.event.title}</div>
+          <div class="text-xs">${arg.event.extendedProps.heure}</div>
+          <div class="text-xs">${statusText}</div>
+        </div>
+      `
+    }
+  }
+}))
+
+// === Modal ===
+function handleEventClick(info) {
+  selectedEvent.value = info.event
+  showReportForm.value = false
+  reportDate.value = ''
+  reportReason.value = ''
+}
+function closeModal() {
+  selectedEvent.value = null
+}
+
+// === Computed pour toggle bouton ===
+const isSeanceValide = computed(() => {
+  if (!selectedEvent.value) return false
+  return selectedEvent.value.extendedProps.statut === 'valide'
+})
+
+const toggleButtonText = computed(() => (isSeanceValide.value ? 'Annuler' : 'Valider'))
+const toggleButtonColor = computed(() =>
+  isSeanceValide.value ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'
+)
+
+// === Fonction toggle validation ===
+const toggleSeanceValidation = async (id) => {
+  try {
+    const token = JSON.parse(localStorage.getItem('token'))
+    const response = await fetch(`http://localhost:8000/api/seances/${id}/valider`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      }
+    })
+    if (!response.ok) throw new Error('Erreur toggle')
+
+    // Mise à jour front
+    const seance = seances.value.find((s) => s.id === id)
+    if (seance) {
+      seance.statut = seance.statut === 'valide' ? 'en_attente' : 'valide'
+      selectedEvent.value.extendedProps.statut = seance.statut
+    }
+  } catch (err) {
+    console.error(err)
+    alert('Erreur lors du changement de statut')
+  }
+}
+
+// === Action Reporter ===
+const reportSeance = async () => {
+  if (!reportDate.value || !reportReason.value) {
+    alert('Veuillez remplir la date et le motif du report.')
+    return
+  }
+
+  try {
+    const token = JSON.parse(localStorage.getItem('token'))
+    const response = await fetch(
+      `http://localhost:8000/api/seances/${selectedEvent.value.id}/reporter`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          nouvelle_date: reportDate.value,
+          motif: reportReason.value
+        })
+      }
+    )
+    if (!response.ok) throw new Error('Erreur report')
+
+    const seance = seances.value.find((s) => s.id === selectedEvent.value.id)
+    if (seance) {
+      seance.statut = 'reporte'
+      seance.jour = reportDate.value.split('T')[0]
+      seance.heure = reportDate.value.split('T')[1]
+      selectedEvent.value.extendedProps.statut = 'reporte'
+    }
+
+    showReportForm.value = false
+    closeModal()
+  } catch (err) {
+    console.error(err)
+    alert('Erreur lors du report de la séance.')
+  }
+}
+
+// === Action Supprimer ===
+const deleteSeance = async (id) => {
+  if (!confirm('Voulez-vous vraiment supprimer cette séance ?')) return
+
+  try {
+    const token = JSON.parse(localStorage.getItem('token'))
+    const response = await fetch(`http://localhost:8000/api/seances/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    if (!response.ok) throw new Error('Erreur suppression')
+
+    seances.value = seances.value.filter((s) => s.id !== id)
+    closeModal()
+  } catch (err) {
+    console.error(err)
+    alert('Erreur lors de la suppression de la séance.')
+  }
+}
+</script>

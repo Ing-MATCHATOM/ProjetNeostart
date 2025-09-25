@@ -30,6 +30,8 @@
         <p><strong>Heure :</strong> {{ selectedEvent.extendedProps.heure }}</p>
         <p><strong>Enseignant :</strong> {{ selectedEvent.extendedProps.enseignant }}</p>
         <p><strong>Statut :</strong> {{ selectedEvent.extendedProps.statut }}</p>
+
+        <!-- Actions principales -->
         <div class="flex justify-end space-x-2 mt-4">
           <button
             class="px-4 py-2 bg-gray-400 text-white rounded-md"
@@ -37,6 +39,57 @@
           >
             Fermer
           </button>
+
+          <button
+            class="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600"
+            @click="showReportForm = !showReportForm"
+          >
+            Reporter
+          </button>
+
+          <button
+            class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
+            @click="validateSeance(selectedEvent.id)"
+          >
+            Valider
+          </button>
+        </div>
+
+        <!-- Formulaire de report -->
+        <div v-if="showReportForm" class="mt-4 space-y-4">
+          <div>
+            <label class="block text-sm font-medium mb-1">Nouvelle date & heure</label>
+            <input
+              v-model="reportDate"
+              type="datetime-local"
+              class="w-full border rounded px-3 py-2"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium mb-1">Motif du report</label>
+            <textarea
+              v-model="reportReason"
+              rows="3"
+              class="w-full border rounded px-3 py-2"
+              placeholder="Ex: indisponibilité, conflit de salle, etc."
+            ></textarea>
+          </div>
+
+          <div class="flex justify-end space-x-2">
+            <button
+              class="px-4 py-2 bg-gray-300 text-black rounded-md hover:bg-gray-400"
+              @click="showReportForm = false"
+            >
+              Annuler
+            </button>
+            <button
+              class="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600"
+              @click="reportSeance"
+            >
+              Confirmer le report
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -52,17 +105,24 @@ import interactionPlugin from '@fullcalendar/interaction'
 import listPlugin from '@fullcalendar/list'
 
 const router = useRouter()
-const seances = ref([])
-const selectedEvent = ref(null)
 
-// Déconnexion
+// === Déconnexion ===
 const handleLogout = () => {
   localStorage.removeItem('user')
   localStorage.removeItem('token')
   router.push('/login')
 }
 
-// Charger les séances liées aux enseignants du parent
+// === Données ===
+const seances = ref([])
+const selectedEvent = ref(null)
+
+// Formulaire report
+const showReportForm = ref(false)
+const reportDate = ref('')
+const reportReason = ref('')
+
+// Charger les données depuis API
 const fetchSeances = async () => {
   try {
     const token = JSON.parse(localStorage.getItem('token'))
@@ -71,31 +131,58 @@ const fetchSeances = async () => {
     })
     if (!response.ok) throw new Error('Erreur API')
     seances.value = await response.json()
-    console.log('Séances parent connecté:', seances.value)
+    console.log('Séances élève connecté:', seances.value)
   } catch (err) {
     console.error('Erreur API:', err)
   }
 }
-
 onMounted(fetchSeances)
 
-// Conversion des séances pour FullCalendar
-const getCalendarEvents = () =>
-  seances.value.map(s => ({
-    id: s.id_seance,
-    title: s.matiere,
-    start: mapJourToDate(s.jour, s.heure),
-    color: s.statut === 'valide' ? '#34D399'
-          : s.statut === 'reporte' ? '#FBBF24'
-          : '#3B82F6',
-    extendedProps: {
-      jour: s.jour,
-      heure: s.heure,
-      statut: s.statut,
-      enseignant: `${s.enseignant_nom} ${s.enseignant_prenom}`
-    }
-  }))
+// === Conversion des données API vers événements FullCalendar ===
+function mapJourToDate(jour, heure) {
+  const joursMap = {
+    lundi: 1,
+    mardi: 2,
+    mercredi: 3,
+    jeudi: 4,
+    vendredi: 5,
+    samedi: 6,
+    dimanche: 0
+  }
+  const today = new Date()
+  const currentDay = today.getDay()
+  const targetDay = joursMap[jour.toLowerCase()] ?? 1
+  const diff = targetDay - currentDay
+  const eventDate = new Date(today)
+  eventDate.setDate(today.getDate() + diff)
+  return `${eventDate.toISOString().split('T')[0]}T${heure}`
+}
 
+const getCalendarEvents = () =>
+  seances.value.map((s) => {
+    return {
+      id: s.id,
+      title: s.matiere,
+      start: mapJourToDate(s.jour, s.heure),
+      color:
+        s.statut === 'valide'
+          ? '#34D399'
+          : s.statut === 'reporte'
+          ? '#FBBF24'
+          : '#3B82F6',
+      extendedProps: {
+        jour: s.jour,
+        heure: s.heure,
+        statut: s.statut,
+        enseignant: s.enseignant || 'Non renseigné'
+      }
+    }
+  })
+
+// === Événements réactifs ===
+const calendarEvents = computed(() => getCalendarEvents())
+
+// === Options calendrier ===
 const calendarOptions = computed(() => ({
   plugins: [dayGridPlugin, interactionPlugin, listPlugin],
   initialView: 'dayGridMonth',
@@ -105,33 +192,95 @@ const calendarOptions = computed(() => ({
     right: 'dayGridMonth,dayGridWeek,list'
   },
   locale: 'fr',
-  events: getCalendarEvents(),
-  eventClick: info => selectedEvent.value = info.event,
-  eventContent: arg => {
+  events: calendarEvents.value,
+  eventClick: handleEventClick,
+  eventContent: (arg) => {
     const statusText =
-      arg.event.extendedProps.statut === 'valide' ? '✅'
-      : arg.event.extendedProps.statut === 'reporte' ? '⏰'
-      : '⏳'
-    return { html: `
-      <div class="p-1 cursor-pointer">
-        <div class="font-semibold text-sm">${arg.event.title}</div>
-        <div class="text-xs">${arg.event.extendedProps.heure}</div>
-        <div class="text-xs">${arg.event.extendedProps.enseignant}</div>
-        <div class="text-xs">${statusText}</div>
-      </div>` }
+      arg.event.extendedProps.statut === 'valide'
+        ? '✅'
+        : arg.event.extendedProps.statut === 'reporte'
+        ? '⏰'
+        : '⏳'
+    return {
+      html: `
+        <div class="p-1 cursor-pointer">
+          <div class="font-semibold text-sm">${arg.event.title}</div>
+          <div class="text-xs">${arg.event.extendedProps.heure}</div>
+          <div class="text-xs">${statusText}</div>
+        </div>
+      `
+    }
   }
 }))
 
+// === Modal ===
+function handleEventClick(info) {
+  selectedEvent.value = info.event
+  showReportForm.value = false
+  reportDate.value = ''
+  reportReason.value = ''
+}
 function closeModal() {
   selectedEvent.value = null
 }
 
-function mapJourToDate(jour, heure) {
-  const joursMap = { lundi:1, mardi:2, mercredi:3, jeudi:4, vendredi:5, samedi:6, dimanche:0 }
-  const today = new Date()
-  const diff = (joursMap[jour.toLowerCase()] ?? 1) - today.getDay()
-  const eventDate = new Date(today)
-  eventDate.setDate(today.getDate() + diff)
-  return `${eventDate.toISOString().split('T')[0]}T${heure}`
+// === Action Valider ===
+const validateSeance = async (id) => {
+  try {
+    const token = JSON.parse(localStorage.getItem('token'))
+    const response = await fetch(`http://localhost:8000/api/seances/${id}/valider`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      }
+    })
+    if (!response.ok) throw new Error('Erreur validation')
+    const seance = seances.value.find((s) => s.id === id)
+    if (seance) seance.statut = 'valide'
+    closeModal()
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+// === Action Reporter ===
+const reportSeance = async () => {
+  if (!reportDate.value || !reportReason.value) {
+    alert('Veuillez remplir la date et le motif du report.')
+    return
+  }
+
+  try {
+    const token = JSON.parse(localStorage.getItem('token'))
+    const response = await fetch(
+      `http://localhost:8000/api/seances/${selectedEvent.value.id}/reporter`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          nouvelle_date: reportDate.value,
+          motif: reportReason.value
+        })
+      }
+    )
+    if (!response.ok) throw new Error('Erreur report')
+
+    const seance = seances.value.find((s) => s.id === selectedEvent.value.id)
+    if (seance) {
+      seance.statut = 'reporte'
+      seance.jour = reportDate.value.split('T')[0]
+      seance.heure = reportDate.value.split('T')[1]
+    }
+
+    showReportForm.value = false
+    closeModal()
+  } catch (err) {
+    console.error(err)
+    alert('Erreur lors du report de la séance.')
+  }
 }
 </script>

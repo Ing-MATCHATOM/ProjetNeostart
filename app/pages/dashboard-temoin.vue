@@ -29,7 +29,7 @@
         <p><strong>Jour :</strong> {{ selectedEvent.extendedProps.jour }}</p>
         <p><strong>Heure :</strong> {{ selectedEvent.extendedProps.heure }}</p>
         <p><strong>Statut :</strong> {{ selectedEvent.extendedProps.statut }}</p>
-
+        
         <div class="flex justify-end space-x-2 mt-4">
           <button
             class="px-4 py-2 bg-gray-400 text-white rounded-md"
@@ -44,6 +44,7 @@
           >
             Valider
           </button>
+
         </div>
       </div>
     </div>
@@ -71,40 +72,64 @@ const handleLogout = () => {
 const seances = ref([])
 const selectedEvent = ref(null)
 
-// Charger les séances où l'utilisateur est témoin
+// Charger les données depuis API
 const fetchSeances = async () => {
   try {
     const token = JSON.parse(localStorage.getItem('token'))
-    const response = await fetch('http://localhost:8000/api/emplois-temoin', { // ⚡ URL pour témoin
+    const response = await fetch('http://localhost:8000/api/emplois-temoin', {
       headers: { Authorization: `Bearer ${token}` }
     })
     if (!response.ok) throw new Error('Erreur API')
     seances.value = await response.json()
-    console.log('Séances témoin connecté:', seances.value)
+    console.log('Séances élève connecté:', seances.value)
   } catch (err) {
     console.error('Erreur API:', err)
   }
 }
-
 onMounted(fetchSeances)
 
 // === Conversion des données API vers événements FullCalendar ===
+function mapJourToDate(jour, heure) {
+  const joursMap = {
+    lundi: 1,
+    mardi: 2,
+    mercredi: 3,
+    jeudi: 4,
+    vendredi: 5,
+    samedi: 6,
+    dimanche: 0
+  }
+  const today = new Date()
+  const currentDay = today.getDay()
+  const targetDay = joursMap[jour.toLowerCase()] ?? 1
+  const diff = targetDay - currentDay
+  const eventDate = new Date(today)
+  eventDate.setDate(today.getDate() + diff)
+  return `${eventDate.toISOString().split('T')[0]}T${heure}`
+}
+
 const getCalendarEvents = () =>
   seances.value.map((s) => {
     return {
-      id: s.id_seance,
+      id: s.id, // ✅ corriger ici, c’est "id" dans ta réponse API
       title: s.matiere,
       start: mapJourToDate(s.jour, s.heure),
-      color: s.statut === 'valide' ? '#34D399'
-            : s.statut === 'reporte' ? '#FBBF24'
-            : '#3B82F6',
-      extendedProps: {
+      color:
+        s.statut === 'valide'
+          ? '#34D399'
+          : s.statut === 'reporte'
+          ? '#FBBF24'
+          : '#3B82F6',
+      extendedProps: { 
         jour: s.jour,
         heure: s.heure,
         statut: s.statut
       }
     }
   })
+
+// === Événements réactifs ===
+const calendarEvents = computed(() => getCalendarEvents())
 
 // === Options calendrier ===
 const calendarOptions = computed(() => ({
@@ -116,7 +141,7 @@ const calendarOptions = computed(() => ({
     right: 'dayGridMonth,dayGridWeek,list'
   },
   locale: 'fr',
-  events: getCalendarEvents(),
+  events: calendarEvents.value, // ✅ maintenant réactif
   eventClick: handleEventClick,
   eventContent: (arg) => {
     const statusText =
@@ -157,31 +182,13 @@ const validateSeance = async (id) => {
       }
     })
     if (!response.ok) throw new Error('Erreur validation')
-    const seance = seances.value.find((s) => s.id_seance === id)
+    // Mettre à jour localement
+    const seance = seances.value.find((s) => s.id === id)
     if (seance) seance.statut = 'valide'
     closeModal()
   } catch (err) {
     console.error(err)
   }
 }
-
-// === Map jour → date actuelle de la semaine ===
-function mapJourToDate(jour, heure) {
-  const joursMap = {
-    lundi: 1,
-    mardi: 2,
-    mercredi: 3,
-    jeudi: 4,
-    vendredi: 5,
-    samedi: 6,
-    dimanche: 0
-  }
-  const today = new Date()
-  const currentDay = today.getDay()
-  const targetDay = joursMap[jour.toLowerCase()] ?? 1
-  const diff = targetDay - currentDay
-  const eventDate = new Date(today)
-  eventDate.setDate(today.getDate() + diff)
-  return `${eventDate.toISOString().split('T')[0]}T${heure}`
-}
 </script>
+
