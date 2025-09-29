@@ -229,7 +229,7 @@ onMounted(async () => {
   if (userData) {
     user.value = JSON.parse(userData)
   } else {
-    navigateTo('/login')
+    navigateTo('/')
     return
   }
 
@@ -252,7 +252,7 @@ onMounted(async () => {
 const handleLogout = () => {
   localStorage.removeItem('user')
   localStorage.removeItem('token')
-  navigateTo('/login')
+  navigateTo('/')
 }
 </script>
 

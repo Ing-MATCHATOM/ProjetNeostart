@@ -154,7 +154,7 @@
             </div>
             <div class="stat-card-light group">
               <div class="stat-content">
-                <p class="stat-value">{{ planifiees }}</p>
+                <p class="stat-value">{{ totalSeances-reportees-valides }}</p>
                 <p class="stat-label">Planifiées</p>
               </div>
               <div class="stat-gradient bg-gradient-to-br from-emerald-100 to-emerald-200"></div>
@@ -227,7 +227,7 @@ onMounted(async () => {
   if (userData) {
     user.value = JSON.parse(userData)
   } else {
-    navigateTo('/login')
+    navigateTo('/')
     return
   }
 })
@@ -239,7 +239,7 @@ onMounted(() => {
     user.value = JSON.parse(userData)
     fetchSeances()
   } else {
-    navigateTo('/login')
+    navigateTo('/')
   }
 })
 
@@ -259,7 +259,16 @@ const fetchSeances = async () => {
     valides.value = seances.value.filter(s => s.statut === 'valide').length
     reportees.value = seances.value.filter(s => s.statut === 'reporte').length
     planifiees.value = seances.value.filter(s => s.statut === 'Planifié' || s.statut === 'attente').length
+    // Récupérer le count des séances validées
+    const resCount = await fetch('http://localhost:8000/api/stats-validations', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
 
+    if (!resCount.ok) throw new Error('Erreur lors de la récupération du count')
+    const dataCount = await resCount.json()
+
+    // Affecter directement le count à valides.value
+    valides.value = dataCount.count || 0
     await nextTick()
     renderChart()
   } catch (err) {
@@ -276,7 +285,7 @@ const renderChart = () => {
     data: {
       labels: ['Planifiées', 'Reportées', 'Validées'],
       datasets: [{
-        data: [planifiees.value, reportees.value, valides.value],
+        data: [totalSeances.value  -  reportees.value - valides.value, reportees.value, valides.value],
         backgroundColor: ['#3b82f6', '#f59e0b', '#10b981'],
         borderColor: ['#1d4ed8', '#d97706', '#047857'],
         borderWidth: 2

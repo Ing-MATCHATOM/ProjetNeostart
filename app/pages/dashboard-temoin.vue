@@ -65,7 +65,7 @@ const router = useRouter()
 const handleLogout = () => {
   localStorage.removeItem('user')
   localStorage.removeItem('token')
-  router.push('/login')
+  router.push('/')
 }
 
 // === Données ===
