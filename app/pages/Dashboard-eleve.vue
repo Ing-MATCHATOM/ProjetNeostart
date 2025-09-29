@@ -37,12 +37,23 @@
           >
             Fermer
           </button>
+
+          <!-- Bouton Valider uniquement si Planifié -->
           <button
             v-if="selectedEvent.extendedProps.statut === 'Planifié'"
             class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
-            @click="validateSeance(selectedEvent.id)"
+            @click="toggleValidationSeance(selectedEvent.id)"
           >
             Valider
+          </button>
+
+          <!-- Bouton désactivé sinon -->
+          <button
+            v-else
+            class="px-4 py-2 bg-gray-300 text-gray-600 rounded-md cursor-not-allowed"
+            disabled
+          >
+            Validation impossible
           </button>
         </div>
       </div>
@@ -58,6 +69,7 @@ import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import listPlugin from '@fullcalendar/list'
 
+// === ROUTER ===
 const router = useRouter()
 
 // === Déconnexion ===
@@ -71,7 +83,7 @@ const handleLogout = () => {
 const seances = ref([])
 const selectedEvent = ref(null)
 
-// Charger les données depuis API
+// === Charger les séances de l’élève ===
 const fetchSeances = async () => {
   try {
     const token = JSON.parse(localStorage.getItem('token'))
@@ -80,18 +92,55 @@ const fetchSeances = async () => {
     })
     if (!response.ok) throw new Error('Erreur API')
     seances.value = await response.json()
-    console.log('Séances élève connecté:', seances.value)
   } catch (err) {
     console.error('Erreur API:', err)
   }
 }
 
-
 onMounted(fetchSeances)
 
-// === Conversion des données API vers événements FullCalendar ===
-const calendarEvents = computed(() => getCalendarEvents())
+// === Création des événements pour le calendrier ===
+const calendarEvents = computed(() => {
+  return seances.value.map(s => ({
+    id: s.id,
+    title: s.matiere,
+    start: mapJourToDate(s.jour, s.heure),
+    color:
+      s.statut.toLowerCase() === 'valide' ? '#34D399' :
+      s.statut.toLowerCase() === 'reporte' ? '#FBBF24' :
+      s.statut.toLowerCase() === 'planifié' ? '#3B82F6' :
+      '#6B7280',
+    extendedProps: {
+      jour: s.jour,
+      heure: s.heure,
+      statut: s.statut
+    }
+  }))
+})
 
+const toggleValidationSeance = async (id) => {
+  const seance = seances.value.find(s => s.id === id)
+
+  try {
+    const token = JSON.parse(localStorage.getItem('token'))
+    const response = await fetch(`http://localhost:8000/api/seances/${id}/validerS`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      }
+    })
+
+    closeModal()
+  } catch (err) {
+    console.error(err)
+    alert('Erreur lors de la validation.')
+  }
+}
+
+
+
+// === Configuration FullCalendar ===
 const calendarOptions = computed(() => ({
   plugins: [dayGridPlugin, interactionPlugin, listPlugin],
   initialView: 'dayGridMonth',
@@ -101,15 +150,16 @@ const calendarOptions = computed(() => ({
     right: 'dayGridMonth,dayGridWeek,list'
   },
   locale: 'fr',
-  events: calendarEvents.value, // ✅ bind au computed
+  events: calendarEvents.value,
   eventClick: handleEventClick,
   eventContent: (arg) => {
+    const statut = arg.event.extendedProps.statut
     const statusText =
-      arg.event.extendedProps.statut === 'valide'
-        ? '✅'
-        : arg.event.extendedProps.statut === 'reporte'
-        ? '⏰'
-        : '⏳'
+      statut === 'valide' ? '✅' :
+      statut === 'reporte' ? '⏰' :
+      statut === 'Planifié' ? '⏳' :
+      ''
+
     return {
       html: `
         <div class="p-1 cursor-pointer">
@@ -122,8 +172,7 @@ const calendarOptions = computed(() => ({
   }
 }))
 
-
-// === Modal ===
+// === Modal Actions ===
 function handleEventClick(info) {
   selectedEvent.value = info.event
 }
@@ -131,28 +180,7 @@ function closeModal() {
   selectedEvent.value = null
 }
 
-// === Action Valider ===
-const validateSeance = async (id) => {
-  try {
-    const token = JSON.parse(localStorage.getItem('token'))
-    const response = await fetch(`http://localhost:8000/api/seances/${id}/valider`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      }
-    })
-    if (!response.ok) throw new Error('Erreur validation')
-    // Mettre à jour localement
-    const seance = seances.value.find((s) => s.id_seance === id)
-    if (seance) seance.statut = 'valide'
-    closeModal()
-  } catch (err) {
-    console.error(err)
-  }
-}
-
-// === Map jour → date actuelle de la semaine ===
+// === Mapping jour vers date actuelle de la semaine ===
 function mapJourToDate(jour, heure) {
   const joursMap = {
     lundi: 1,

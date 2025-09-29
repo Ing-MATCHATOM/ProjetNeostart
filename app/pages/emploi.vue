@@ -29,7 +29,7 @@
         <p><strong>Jour :</strong> {{ selectedEvent.extendedProps.jour }}</p>
         <p><strong>Heure :</strong> {{ selectedEvent.extendedProps.heure }}</p>
         <p><strong>Enseignant :</strong> {{ selectedEvent.extendedProps.enseignant }}</p>
-        <p><strong>Statut :</strong> {{ selectedEvent.extendedProps.statut }}</p>
+        <p><strong>Statut :</strong> {{ currentStatus }}</p>
 
         <!-- Actions principales -->
         <div class="flex justify-end space-x-2 mt-4">
@@ -105,14 +105,26 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import FullCalendar from '@fullcalendar/vue3'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import listPlugin from '@fullcalendar/list'
+import { useToast } from 'vue-toastification'
 
+const toast = useToast()
 const router = useRouter()
+
+// === Données ===
+const seances = ref([])
+const selectedEvent = ref(null)
+const showReportForm = ref(false)
+const reportDate = ref('')
+const reportReason = ref('')
+
+// Nouvelle variable reactive pour gérer le statut courant affiché
+const currentStatus = ref('')
 
 // === Déconnexion ===
 const handleLogout = () => {
@@ -121,16 +133,7 @@ const handleLogout = () => {
   router.push('/login')
 }
 
-// === Données ===
-const seances = ref([])
-const selectedEvent = ref(null)
-
-// Formulaire report
-const showReportForm = ref(false)
-const reportDate = ref('')
-const reportReason = ref('')
-
-// Charger les données depuis API
+// === API : Charger les séances ===
 const fetchSeances = async () => {
   try {
     const token = JSON.parse(localStorage.getItem('token'))
@@ -139,56 +142,43 @@ const fetchSeances = async () => {
     })
     if (!response.ok) throw new Error('Erreur API')
     seances.value = await response.json()
-    console.log('Séances élève connecté:', seances.value)
   } catch (err) {
-    console.error('Erreur API:', err)
+    toast.error('Erreur lors du chargement des séances.')
+    console.error(err)
   }
 }
 onMounted(fetchSeances)
 
-// === Conversion des données API vers événements FullCalendar ===
+// === Mapping vers FullCalendar ===
 function mapJourToDate(jour, heure) {
-  const joursMap = {
-    lundi: 1,
-    mardi: 2,
-    mercredi: 3,
-    jeudi: 4,
-    vendredi: 5,
-    samedi: 6,
-    dimanche: 0
-  }
+  const joursMap = { lundi: 1, mardi: 2, mercredi: 3, jeudi: 4, vendredi: 5, samedi: 6, dimanche: 0 }
   const today = new Date()
   const currentDay = today.getDay()
   const targetDay = joursMap[jour.toLowerCase()] ?? 1
-  const diff = targetDay - currentDay
+  const diff = (targetDay - currentDay + 7) % 7
   const eventDate = new Date(today)
   eventDate.setDate(today.getDate() + diff)
   return `${eventDate.toISOString().split('T')[0]}T${heure}`
 }
 
-const getCalendarEvents = () =>
-  seances.value.map((s) => {
-    return {
-      id: s.id,
-      title: s.matiere,
-      start: mapJourToDate(s.jour, s.heure),
-      color:
-        s.statut === 'valide'
-          ? '#34D399'
-          : s.statut === 'reporte'
-          ? '#FBBF24'
-          : '#3B82F6',
-      extendedProps: {
-        jour: s.jour,
-        heure: s.heure,
-        statut: s.statut,
-        enseignant: s.enseignant || 'Non renseigné'
-      }
+// === Événements calendrier ===
+const calendarEvents = ref([])
+watch(seances, () => {
+  calendarEvents.value = seances.value.map((s) => ({
+    id: s.id,
+    title: s.matiere,
+    start: mapJourToDate(s.jour, s.heure),
+    color:
+      s.statut === 'valide' ? '#34D399' :
+      s.statut === 'reporte' ? '#FBBF24' : '#3B82F6',
+    extendedProps: {
+      jour: s.jour,
+      heure: s.heure,
+      statut: s.statut,
+      enseignant: s.enseignant || 'Non renseigné'
     }
-  })
-
-// === Événements réactifs ===
-const calendarEvents = computed(() => getCalendarEvents())
+  }))
+}, { immediate: true })
 
 // === Options calendrier ===
 const calendarOptions = computed(() => ({
@@ -203,12 +193,12 @@ const calendarOptions = computed(() => ({
   events: calendarEvents.value,
   eventClick: handleEventClick,
   eventContent: (arg) => {
-    const statusText =
-      arg.event.extendedProps.statut === 'valide'
-        ? '✅'
-        : arg.event.extendedProps.statut === 'reporte'
-        ? '⏰'
-        : '⏳'
+    const statusText = {
+      valide: '✅',
+      reporte: '⏰',
+      en_attente: '⏳'
+    }[arg.event.extendedProps.statut] || '⏳'
+
     return {
       html: `
         <div class="p-1 cursor-pointer">
@@ -224,30 +214,33 @@ const calendarOptions = computed(() => ({
 // === Modal ===
 function handleEventClick(info) {
   selectedEvent.value = info.event
+  currentStatus.value = info.event.extendedProps.statut  // Mise à jour du statut affiché
   showReportForm.value = false
   reportDate.value = ''
   reportReason.value = ''
 }
 function closeModal() {
   selectedEvent.value = null
+  currentStatus.value = ''
 }
 
-// === Computed pour toggle bouton ===
-const isSeanceValide = computed(() => {
-  if (!selectedEvent.value) return false
-  return selectedEvent.value.extendedProps.statut === 'valide'
-})
+// === Toggle statut ===
+const isSeanceValide = computed(() => currentStatus.value === 'valide')
 
-const toggleButtonText = computed(() => (isSeanceValide.value ? 'Annuler' : 'Valider'))
-const toggleButtonColor = computed(() =>
-  isSeanceValide.value ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'
+const toggleButtonText = computed(() =>
+  isSeanceValide.value ? 'Annuler' : 'Valider'
 )
 
-// === Fonction toggle validation ===
+const toggleButtonColor = computed(() =>
+  isSeanceValide.value
+    ? 'bg-red-500 hover:bg-red-600'
+    : 'bg-green-500 hover:bg-green-600'
+)
+
 const toggleSeanceValidation = async (id) => {
   try {
     const token = JSON.parse(localStorage.getItem('token'))
-    const response = await fetch(`http://localhost:8000/api/seances/${id}/valider`, {
+    const response = await fetch(`http://localhost:8000/api/seances/${id}/validerE`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -256,41 +249,41 @@ const toggleSeanceValidation = async (id) => {
     })
     if (!response.ok) throw new Error('Erreur toggle')
 
-    // Mise à jour front
     const seance = seances.value.find((s) => s.id === id)
     if (seance) {
-      seance.statut = seance.statut === 'valide' ? 'en_attente' : 'valide'
-      selectedEvent.value.extendedProps.statut = seance.statut
+      const newStatut = seance.statut === 'valide' ? 'en_attente' : 'valide'
+      seance.statut = newStatut
+      selectedEvent.value.setExtendedProp('statut', newStatut)
+      currentStatus.value = newStatut  // Mise à jour du statut affiché
+      toast.success(`Séance ${newStatut === 'valide' ? 'validée' : 'annulée'}.`)
     }
   } catch (err) {
     console.error(err)
-    alert('Erreur lors du changement de statut')
+    toast.error('Erreur lors de la mise à jour.')
   }
 }
 
-// === Action Reporter ===
+// === Reporter ===
 const reportSeance = async () => {
   if (!reportDate.value || !reportReason.value) {
-    alert('Veuillez remplir la date et le motif du report.')
+    toast.warning('Veuillez remplir la date et le motif.')
     return
   }
 
   try {
     const token = JSON.parse(localStorage.getItem('token'))
-    const response = await fetch(
-      `http://localhost:8000/api/seances/${selectedEvent.value.id}/reporter`,
-      {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          nouvelle_date: reportDate.value,
-          motif: reportReason.value
-        })
-      }
-    )
+    const response = await fetch(`http://localhost:8000/api/seances/${selectedEvent.value.id}/reporter`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        nouvelle_date: reportDate.value,
+        motif: reportReason.value
+      })
+    })
+
     if (!response.ok) throw new Error('Erreur report')
 
     const seance = seances.value.find((s) => s.id === selectedEvent.value.id)
@@ -298,34 +291,44 @@ const reportSeance = async () => {
       seance.statut = 'reporte'
       seance.jour = reportDate.value.split('T')[0]
       seance.heure = reportDate.value.split('T')[1]
-      selectedEvent.value.extendedProps.statut = 'reporte'
+      selectedEvent.value.setExtendedProp('statut', 'reporte')
+      currentStatus.value = 'reporte'  // Mise à jour du statut affiché
     }
 
+    toast.success('Séance reportée.')
     showReportForm.value = false
     closeModal()
   } catch (err) {
     console.error(err)
-    alert('Erreur lors du report de la séance.')
+    toast.error('Erreur lors du report.')
   }
 }
 
-// === Action Supprimer ===
-const deleteSeance = async (id) => {
-  if (!confirm('Voulez-vous vraiment supprimer cette séance ?')) return
+// === Supprimer ===
+const deleteSeance = async () => {
+  const confirmDelete = confirm('Êtes-vous sûr de vouloir supprimer cette séance ?')
+  if (!confirmDelete) return
 
   try {
     const token = JSON.parse(localStorage.getItem('token'))
-    const response = await fetch(`http://localhost:8000/api/seances/${id}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` }
+    const response = await fetch(`http://localhost:8000/api/seances/${selectedEvent.value.id}/supprimer`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
     })
+
     if (!response.ok) throw new Error('Erreur suppression')
 
-    seances.value = seances.value.filter((s) => s.id !== id)
+    // Supprimer localement dans la liste
+    seances.value = seances.value.filter((s) => s.id !== selectedEvent.value.id)
+
+    toast.success('Séance supprimée avec succès.')
     closeModal()
   } catch (err) {
     console.error(err)
-    alert('Erreur lors de la suppression de la séance.')
+    toast.error("Erreur lors de la suppression de la séance.")
   }
 }
+
 </script>

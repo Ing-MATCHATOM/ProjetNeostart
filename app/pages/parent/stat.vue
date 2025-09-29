@@ -17,8 +17,6 @@
             <th class="border px-3 py-2">Heure</th>
             <th class="border px-3 py-2">Enseignant</th>
             <th class="border px-3 py-2">Validé</th>
-            <th class="border px-3 py-2">Refusé</th>
-            <th class="border px-3 py-2">En attente</th>
           </tr>
         </thead>
         <tbody>
@@ -28,8 +26,6 @@
             <td class="border px-3 py-2">{{ s.heure }}</td>
             <td class="border px-3 py-2">{{ s.enseignant_prenom }} {{ s.enseignant_nom }}</td>
             <td class="border px-3 py-2 text-green-600 font-semibold">{{ s.nb_valide }}</td>
-            <td class="border px-3 py-2 text-red-600 font-semibold">{{ s.nb_refuse }}</td>
-            <td class="border px-3 py-2 text-yellow-600 font-semibold">{{ s.nb_en_attente }}</td>
           </tr>
           <tr v-if="stats.length === 0">
             <td colspan="7" class="text-center py-4 text-gray-500">

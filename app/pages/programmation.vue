@@ -7,7 +7,6 @@
         <NuxtLink to="dashboard-enseignant" class="nav-link">Accueil</NuxtLink>
         <NuxtLink to="emploi" class="nav-link">Emploi du temps</NuxtLink>
         <NuxtLink to="rapport-enseignant" class="nav-link">Rapports</NuxtLink>
-        <NuxtLink to="/enseignant/statistiques" class="nav-link">Statistiques</NuxtLink>
       </nav>
     </div>
 

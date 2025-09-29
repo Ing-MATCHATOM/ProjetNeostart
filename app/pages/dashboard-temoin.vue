@@ -174,7 +174,7 @@ function closeModal() {
 const validateSeance = async (id) => {
   try {
     const token = JSON.parse(localStorage.getItem('token'))
-    const response = await fetch(`http://localhost:8000/api/seances/${id}/valider`, {
+    const response = await fetch(`http://localhost:8000/api/seances/${id}/validerT`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

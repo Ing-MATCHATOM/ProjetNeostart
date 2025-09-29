@@ -16,3 +16,13 @@ export default defineNuxtRouteMiddleware((to, from) => {
     return navigateTo('/dashboard')
   }
 })
+import { createApp } from 'vue'
+import App from 'C:/Users/user/OneDrive/Desktop/frontend/app/pages/emploi.vue'  // ou le chemin vers ton composant racine
+import Toast from 'vue-toastification'
+import 'vue-toastification/dist/index.css'
+
+const app = createApp(App)
+
+app.use(Toast)
+
+app.mount('#app')
